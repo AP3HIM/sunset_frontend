@@ -1,4 +1,4 @@
-// src/api.js
+// src/api.js 
 const API_BASE = import.meta.env.VITE_BACKEND_BASE_URL || "https://sunset-backend.onrender.com/api";
 
 export async function register({ username, email, password }) {
@@ -54,4 +54,5 @@ export async function uploadFileToR2(uploadUrl, file) {
   });
   if (!res.ok) throw new Error("Upload to R2 failed");
   return true;
+
 }
