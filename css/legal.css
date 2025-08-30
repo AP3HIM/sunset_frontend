@@ -1,0 +1,50 @@
+/* src/css/legal.css */
+
+.legal-page {
+  max-width: 900px;
+  margin: 4rem auto;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.legal-page:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.legal-page h1,
+.legal-page h2,
+.legal-page h3 {
+  color: #ffa500;
+  margin-bottom: 1.5rem;
+}
+
+.legal-page p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #ddd;
+  margin-bottom: 1rem;
+}
+
+.legal-page a {
+  color: #ffae42;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.legal-page a:hover {
+  color: #fff;
+}
+
+body {
+  background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+  min-height: 100vh;
+  padding-bottom: 5rem; /* ensure footer not overlapping */
+  margin: 0;
+}

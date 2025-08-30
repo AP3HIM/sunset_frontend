@@ -1,0 +1,15 @@
+.terminal-feed {
+  background-color: #000;
+  color: #39ff14;
+  font-family: monospace;
+  padding: 16px;
+  height: 192px;
+  overflow-y: scroll;
+  border-radius: 8px;
+  border: 1px solid #222;
+}
+
+.terminal-line {
+  white-space: pre-wrap;
+  line-height: 1.4;
+}

@@ -1,0 +1,12 @@
+/* electron.css */
+body.electron {
+  scroll-snap-type: none; /* remove snapping */
+  overflow-y: auto;
+  height: auto; /* let it size naturally */
+}
+
+.app-container.electron {
+  max-width: 1200px;  /* prevent squishing */
+  margin: 0 auto;
+  padding: 1rem;
+}

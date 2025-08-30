@@ -1,0 +1,140 @@
+/* stats.css */
+
+:root {
+  --card-blur: 20px;
+  --border-radius: 24px;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --mini-bg: rgba(255, 255, 255, 0.04);
+  --mini-hover-bg: rgba(255, 255, 255, 0.06);
+  --font-glow-light: rgba(255, 255, 255, 0.3);
+  --font-glow-strong: rgba(255, 255, 255, 0.5);
+}
+
+.stats-wrapper {
+  /* background: radial-gradient(ellipse at top left, #111, #1a1a1a); */
+  color: white;
+  padding: 7rem 2rem;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%);
+  filter: blur(120px);
+  z-index: -1;
+}
+
+/* Main Glass Card */
+.glass-card {
+  max-width: 1200px;
+  width: 100%;
+  background: var(--glass-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--card-blur));
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
+
+@media (min-width: 768px) {
+  .glass-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6rem;
+  }
+}
+
+/* Left Side Main Stat */
+.glass-card .highlight-stat {
+  flex: 1;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .glass-card .highlight-stat {
+    text-align: left;
+  }
+}
+
+.glow-number {
+  font-size: 4rem;
+  font-weight: 800;
+  text-shadow: 0 0 10px var(--font-glow-light), 0 0 20px var(--font-glow-strong);
+  animation: glowPulse 6s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 0 0 10px var(--font-glow-light);
+  }
+  50% {
+    text-shadow: 0 0 20px var(--font-glow-strong);
+  }
+}
+
+.highlight-stat p.subtext {
+  font-size: 1.25rem;
+  margin-top: 1rem;
+  opacity: 0.85;
+}
+
+.highlight-stat p.secondary {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  opacity: 0.7;
+}
+
+/* Mini Cards */
+.stat-grid {
+  flex: 1;
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.mini-card {
+  background: var(--mini-bg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mini-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  background: var(--mini-hover-bg);
+  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.1);
+}
+
+.mini-card p.number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+.mini-card p.label {
+  font-size: 1rem;
+  opacity: 0.8;
+}

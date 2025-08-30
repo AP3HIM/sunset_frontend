@@ -1,0 +1,17 @@
+.sunset-slider {
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(270deg, #ff9a8b, #ff6a88, #ff99ac);
+}
+
+.sunset-slide {
+  display: inline-block;
+  padding: 1rem 2rem;
+  white-space: nowrap;
+  animation: slide 10s linear infinite;
+}
+
+@keyframes slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
