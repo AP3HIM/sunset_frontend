@@ -1,0 +1,63 @@
+{
+  "name": "sunsetuploader",
+  "private": true,
+  "version": "1.0.0",
+  "main": "electron.cjs",
+  "description": "An Electron App to complete change the way content creators and anyone else in the world uploads content.",
+  "author": "Adi Patel",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "vite": "vite",
+    "build": "vite build",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.876.0",
+    "framer-motion": "^12.23.12",
+    "gsap": "^3.13.0",
+    "lottie-react": "^2.4.1",
+    "lucide-react": "^0.536.0",
+    "path-browserify": "^1.0.1",
+    "react": "^19.1.0",
+    "react-countup": "^6.5.3",
+    "react-dom": "^19.1.0",
+    "react-dropzone": "^14.3.8",
+    "react-icons": "^5.5.0",
+    "react-intersection-observer": "^9.16.0",
+    "react-router-dom": "^7.7.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.0",
+    "electron": "^37.2.5",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "vite": "^7.0.4",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.sunsetuploader.app",
+    "productName": "SunsetUploader",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron.cjs",
+      "preload.cjs"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/sunset-logo-resized-1024.ico"
+    }
+  }
+}
