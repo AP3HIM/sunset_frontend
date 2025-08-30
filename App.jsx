@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx 
 import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/Home";
