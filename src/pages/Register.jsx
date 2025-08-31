@@ -33,7 +33,7 @@ export default function Register() {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/accounts/register/`,
+        `${import.meta.env.VITE_BACKEND_BASE_URL}/accounts/register/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
