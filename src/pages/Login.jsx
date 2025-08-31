@@ -23,7 +23,7 @@ function Login() {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/accounts/login/`,
+        `${import.meta.env.VITE_BACKEND_BASE_URL}/accounts/login/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
