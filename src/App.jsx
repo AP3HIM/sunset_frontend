@@ -1,4 +1,4 @@
-// src/App.jsx 
+// src/App.jsx
 import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/Home";
@@ -21,6 +21,7 @@ import Socials from "./pages/legal/Socials";
 import News from "./pages/legal/News";
 
 import "./css/app.css";
+import { Toaster } from 'react-hot-toast';
 
 // Detect Electron (process.versions.electron works in preload)
 const isElectron = !!(typeof navigator === "object" && navigator.userAgent.toLowerCase().includes("electron"));
@@ -50,6 +51,7 @@ function App() {
           <Route path="/news" element={<News />} />
           <Route path="*" element={<ErrorPage />} />
         </Routes>
+        <Toaster position="top-right" />
       </div>
     </RouterComponent>
   );
