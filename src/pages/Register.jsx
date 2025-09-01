@@ -1,9 +1,11 @@
+import "../css/login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import "../css/login.css";
+import toast from "react-hot-toast";
+import { register } from "../services/api";
 
-export default function Register() {
+function Register() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
@@ -28,34 +30,21 @@ export default function Register() {
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
+      toast.error("Passwords do not match.");
       return;
     }
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_BASE_URL}/accounts/register/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: formData.username,
-            email: formData.email,
-            password: formData.password,
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const data = await res.json();
-        if (data.email) throw new Error(data.email[0]);
-        if (data.username) throw new Error(data.username[0]);
-        if (data.password) throw new Error(data.password[0]);
-        throw new Error("Registration failed. Try again.");
-      }
-
+      await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      });
+      toast.success("Registration successful! Please check your email.");
       navigate("/login");
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -63,7 +52,6 @@ export default function Register() {
     <div className="login-page">
       <form className="login-glass" onSubmit={handleSubmit}>
         <h2>Create Account</h2>
-
         <div className="input-group">
           <input
             type="text"
@@ -74,7 +62,6 @@ export default function Register() {
             required
           />
         </div>
-
         <div className="input-group">
           <input
             type="email"
@@ -85,7 +72,6 @@ export default function Register() {
             required
           />
         </div>
-
         <div className="input-group">
           <input
             type={showPassword ? "text" : "password"}
@@ -103,7 +89,6 @@ export default function Register() {
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
-
         <div className="input-group">
           <input
             type={showConfirmPassword ? "text" : "password"}
@@ -121,13 +106,13 @@ export default function Register() {
             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
-
         {error && (
           <p style={{ color: "#ff6b6b", fontSize: "0.9rem" }}>{error}</p>
         )}
-
         <button type="submit">Register</button>
       </form>
     </div>
   );
 }
+
+export default Register;
