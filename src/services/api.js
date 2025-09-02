@@ -1,4 +1,4 @@
-// src/api.js 
+// src/api.js
 const API_BASE = import.meta.env.VITE_BACKEND_BASE_URL || "https://api.sunsetuploader.com/api";
 
 export async function register({ username, email, password }) {
@@ -7,8 +7,20 @@ export async function register({ username, email, password }) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, email, password })
   });
-  if (!res.ok) throw new Error((await res.json()).detail || "Registration failed");
-  return res.json();
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Server returned invalid response");
+  }
+
+  if (!res.ok) {
+    const message = data.detail || data.error || JSON.stringify(data) || "Registration failed";
+    throw new Error(message);
+  }
+
+  return data;
 }
 
 export async function resendConfirm(email) {
@@ -54,6 +66,4 @@ export async function uploadFileToR2(uploadUrl, file) {
   });
   if (!res.ok) throw new Error("Upload to R2 failed");
   return true;
-
 }
-
