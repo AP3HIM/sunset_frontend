@@ -26,23 +26,28 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting registration form..."); // Debug log
     setError("");
 
     if (formData.password !== formData.confirmPassword) {
+      console.warn("Password mismatch");
       setError("Passwords do not match.");
       toast.error("Passwords do not match.");
       return;
     }
 
     try {
-      await register({
+      console.log("Sending data to API:", formData);
+      const response = await register({
         username: formData.username,
         email: formData.email,
         password: formData.password,
       });
+      console.log("Registration success:", response);
       toast.success("Registration successful! Please check your email.");
       navigate("/login");
     } catch (err) {
+      console.error("Registration error:", err);
       setError(err.message);
       toast.error(err.message);
     }
