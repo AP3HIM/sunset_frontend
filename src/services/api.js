@@ -1,5 +1,5 @@
 // src/api.js
-const API_BASE = import.meta.env.VITE_BACKEND_BASE_URL || "https://api.sunsetuploader.com";
+const API_BASE = import.meta.env.VITE_BACKEND_BASE_URL || "https://api.sunsetuploader.com/api";
 
 export async function register({ username, email, password }) {
   const res = await fetch(`${API_BASE}/accounts/register/`, {
