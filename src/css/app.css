@@ -34,12 +34,13 @@ section {
 /* --------------------------- */
 
 /* Large desktops */
+/*
 @media (min-width: 1440px) {
   section {
     padding: 6rem 8rem;
   }
 }
-
+*/
 /* Standard desktop */
 @media (min-width: 1024px) and (max-width: 1439px) {
   section {
