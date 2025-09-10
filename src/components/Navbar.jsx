@@ -9,9 +9,22 @@ function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    setIsLoggedIn(!!token);
+    const checkLogin = () => {
+      const token = localStorage.getItem("authToken");
+      setIsLoggedIn(!!token);
+    };
+
+    // Run immediately
+    checkLogin();
+
+    // Listen for storage changes (like login/logout)
+    window.addEventListener("storage", checkLogin);
+
+    return () => {
+      window.removeEventListener("storage", checkLogin);
+    };
   }, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
