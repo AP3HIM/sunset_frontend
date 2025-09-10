@@ -23,7 +23,11 @@ function Login() {
     setError("");
 
     try {
-      await login(formData);
+      const data = await login(formData);
+
+      // store token in localStorage
+      localStorage.setItem("authToken", data.access);
+
       toast.success("Login successful!");
       navigate("/"); 
     } catch (err) {
@@ -31,6 +35,7 @@ function Login() {
       toast.error(err.message);
     }
   };
+
 
   return (
     <div className="login-page">
