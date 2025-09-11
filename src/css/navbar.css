@@ -50,9 +50,11 @@
 
 .logout-btn {
   display: flex;
-  gap: 24px;
   list-style: none;
-  font-family: 'Lato', sans-serif;
+  font-family: Lato, sans-serif;
+  color: white;
+  font-size: large;
+  margin: auto;
 }
 
 .logout-btn a {
