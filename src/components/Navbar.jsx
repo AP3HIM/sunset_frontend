@@ -43,7 +43,7 @@ function Navbar() {
 
         {isLoggedIn ? (
           <li>
-            <button className="nav-links" onClick={handleLogout}>Logout</button>
+            <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </li>
         ) : (
           <>
