@@ -47,3 +47,22 @@
 .nav-links a:hover {
   color: #ffb347;
 }
+
+.logout-btn {
+  display: flex;
+  gap: 24px;
+  list-style: none;
+  font-family: 'Lato', sans-serif;
+}
+
+.logout-btn a {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  font-size: 1.2rem;
+}
+
+.logout-btn a:hover{
+  color: #ffb347;
+}
