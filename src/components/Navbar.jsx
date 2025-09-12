@@ -8,6 +8,11 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const closeMenu = () => setIsOpen(false);
+
   useEffect(() => {
     const checkLogin = () => {
       const token = localStorage.getItem("authToken");
@@ -34,25 +39,54 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="title-link">
-        SunsetUploader
-      </Link>
-      <ul className="nav-links">
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/upload">Upload</Link></li>
+      <div className="nav-container">
+        <Link to="/" className="title-link" onClick={closeMenu}>
+          SunsetUploader
+        </Link>
 
-        {isLoggedIn ? (
+        {/* Hamburger button */}
+        <button className="hamburger" onClick={toggleMenu}>
+          <span className="bar"></span>
+          <span className="bar"></span>
+          <span className="bar"></span>
+        </button>
+
+        {/* Nav links */}
+        <ul className={`nav-links ${isOpen ? "open" : ""}`}>
           <li>
-            <button className="logout-btn" onClick={handleLogout}>Logout</button>
+            <Link to="/" onClick={closeMenu}>
+              Home
+            </Link>
           </li>
-        ) : (
-          <>
-            <li><Link to="/login">Login</Link></li>
-          </>
-        )}
-      </ul>
+          <li>
+            <Link to="/upload" onClick={closeMenu}>
+              Upload
+            </Link>
+          </li>
+
+          {isLoggedIn ? (
+            <li>
+              <button
+                className="nav-link-button"
+                onClick={() => {
+                  handleLogout();
+                  closeMenu();
+                }}
+              >
+                Logout
+              </button>
+            </li>
+          ) : (
+            <li>
+              <Link to="/login" onClick={closeMenu}>
+                Login
+              </Link>
+            </li>
+          )}
+        </ul>
+      </div>
     </nav>
   );
-}
+};
 
 export default Navbar;
