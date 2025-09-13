@@ -44,7 +44,8 @@ export default function UploadButton({ video, caption, platforms, setLogs }) {
       });
 
       try {
-        const platformArgs = platforms.flatMap((p) => ["--platforms", p]);
+        const platformArgs = platforms && platforms.length > 0 ? ["--platforms", ...platforms] : [];
+        console.log("Uploading with platforms:", platforms, " -> platformArgs:", platformArgs);
         await window.electronAPI.runPythonUploader([
           "--caption", caption,
           "--video", videoPath,
