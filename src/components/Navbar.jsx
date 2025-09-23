@@ -54,11 +54,6 @@ function Navbar() {
         {/* Nav links */}
         <ul className={`nav-links ${isOpen ? "open" : ""}`}>
           <li>
-            <Link to="/" onClick={closeMenu}>
-              Home
-            </Link>
-          </li>
-          <li>
             <Link to="/upload" onClick={closeMenu}>
               Upload
             </Link>
