@@ -1,5 +1,5 @@
 import React from "react";
-import { FaTwitter, FaInstagram, FaTikTok } from "react-icons/fa";
+import { FaTwitter, FaInstagram } from "react-icons/fa";
 import "../../css/pricing.css";
 
 export default function Socials() {
@@ -14,9 +14,6 @@ export default function Socials() {
           </a>
           <a href="https://www.instagram.com/sunsetuploader" target="_blank" rel="noopener noreferrer">
             <FaInstagram size={24} />
-          </a>
-          <a href="https://www.tiktok.com/@sunset_uploader23" target="_blank" rel="noopener noreferrer">
-            <FaTikTok size={24} />
           </a>
         </div>
       </div>
