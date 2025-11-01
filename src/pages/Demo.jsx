@@ -15,7 +15,7 @@ export default function Demo() {
         </p>
 
         <div className="glass-section">
-          <h2>🎥 Product Demo Video</h2>
+          <h2>Product Demo Video</h2>
           <p>
             Watch the full walkthrough of how to upload content automatically to
             multiple platforms using our AI-powered uploader. The demo video
@@ -33,7 +33,7 @@ export default function Demo() {
         </div>
 
         <div className="glass-section about-creator">
-          <h2>👋 Meet the Creator</h2>
+          <h2>Meet the Creator</h2>
           <div className="creator-info">
             <img
               src={linkedinImg}
@@ -70,7 +70,7 @@ export default function Demo() {
         </div>
 
         <div className="glass-section">
-          <h2>🚀 What's Next</h2>
+          <h2>What's Next</h2>
           <p>
             We’re constantly improving. Expect smarter upload recognition, AI
             caption suggestions, and adaptive workflows soon.
