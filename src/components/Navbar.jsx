@@ -58,6 +58,23 @@ function Navbar() {
               Upload
             </Link>
           </li>
+          <li>
+            <Link to="/" onClick={closeMenu}>
+              Home
+            </Link>
+          </li>
+
+          <li>
+            <Link to="/upload" onClick={closeMenu}>
+              Upload
+            </Link>
+          </li>
+
+          <li>
+            <Link to="/demo" onClick={closeMenu}>
+              Demo
+            </Link>
+          </li>
 
           {isLoggedIn ? (
             <li>
