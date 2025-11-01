@@ -7,6 +7,7 @@ import LoginPage from "./pages/Login";
 import Register from "./pages/Register";
 import Upload from "./pages/Upload";
 import ErrorPage from "./pages/ErrorPage";
+import Demo from "./pages/Demo";
 
 // Legal pages
 import About from "./pages/legal/About";
@@ -50,6 +51,7 @@ function App() {
           <Route path="/socials" element={<Socials />} />
           <Route path="/news" element={<News />} />
           <Route path="*" element={<ErrorPage />} />
+          <Route path="/demo" element={<Demo />} />
         </Routes>
         <Toaster position="top-right" />
       </div>
