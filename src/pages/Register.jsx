@@ -1,5 +1,6 @@
 import "../css/login.css";
-import { useState } from "react";
+import "../css/hero.css"; // popup styles live here
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
@@ -16,6 +17,12 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+
+  useEffect(() => {
+    // show popup on mount
+    setShowPopup(true);
+  }, []);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -26,28 +33,23 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting registration form..."); // Debug log
     setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      console.warn("Password mismatch");
       setError("Passwords do not match.");
       toast.error("Passwords do not match.");
       return;
     }
 
     try {
-      console.log("Sending data to API:", formData);
       const response = await register({
         username: formData.username,
         email: formData.email,
         password: formData.password,
       });
-      console.log("Registration success:", response);
       toast.success("Registration successful! Please check your email.");
       navigate("/login");
     } catch (err) {
-      console.error("Registration error:", err);
       setError(err.message);
       toast.error(err.message);
     }
@@ -116,6 +118,35 @@ function Register() {
         )}
         <button type="submit">Register</button>
       </form>
+
+      {/* Popup overlay */}
+      {showPopup && (
+        <div className="popup-overlay">
+          <div className="popup">
+            <h2>Before You Register</h2>
+            <p>
+              Please follow these rules when creating your account:
+            </p>
+            <ul style={{ textAlign: "left", marginBottom: "1rem", color: "#333" }}>
+              <li> Usernames may contain <b>letters</b>, <b>numbers</b>, <b>underscores</b>, and <b>hashtags</b>.</li>
+              <li> Passwords must include:</li>
+              <ul style={{ marginLeft: "1rem" }}>
+                <li>• At least one <b>uppercase letter</b></li>
+                <li>• At least one <b>digit</b></li>
+                <li>• At least one <b>special character</b> (e.g. ! @ # $ % ^ & *)</li>
+              </ul>
+            </ul>
+            <div className="popup-actions">
+              <button
+                className="popup-btn"
+                onClick={() => setShowPopup(false)}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
