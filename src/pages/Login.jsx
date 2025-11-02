@@ -27,6 +27,7 @@ function Login() {
 
       // store token in localStorage
       localStorage.setItem("authToken", data.access);
+      window.dispatchEvent(new Event("storage")); 
 
       toast.success("Login successful!");
       navigate("/"); 
