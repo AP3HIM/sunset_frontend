@@ -19,10 +19,14 @@ export default function HomePage() {
       {
         selector: ".hero",
         gradient: "radial-gradient(ellipse at top left, #FFD6A5, #FFB385, #FF9671)",
+       // gradient:
+  //  "radial-gradient(ellipse at top left, #E59F58 0%, #a27c65ff 40%, #FF6F61 75%, #D65076 100%)",
       },
       {
         selector: ".features",
-        gradient: "radial-gradient(ellipse at center, #FF9671, #D65076, #822659)",
+       // gradient: "radial-gradient(ellipse at center, #FF9671, #D65076, #822659)",
+        gradient:
+    "radial-gradient(ellipse at center, #FF6F61 0%, #E15A84 40%, #D65076 70%, #822659 100%)",
       },
       {
         selector: ".how-it-works",
