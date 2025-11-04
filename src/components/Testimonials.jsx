@@ -10,8 +10,8 @@ const testimonials = [
     company: "papertigersmedia.com",
   },
   {
-    name: "Jordan Kim",
-    text: "As an independent creator, this tool saved me hours every week. Posting is finally stress-free.",
+    name: "Adi Patel",
+    text: "As a creator, this tool saved me hours every week. I only had to click one button to get my videos uploaded, and I stopped wasting time uploading.",
     company: "Content Creator",
   },
   {
