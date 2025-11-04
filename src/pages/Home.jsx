@@ -18,9 +18,8 @@ export default function HomePage() {
     const sections = [
       {
         selector: ".hero",
-        gradient: "radial-gradient(ellipse at top left, #FFD6A5, #FFB385, #FF9671)",
-       // gradient:
-  //  "radial-gradient(ellipse at top left, #E59F58 0%, #a27c65ff 40%, #FF6F61 75%, #D65076 100%)",
+       // gradient: "radial-gradient(ellipse at top left, #FFD6A5, #FFB385, #FF9671)",
+       gradient: "radial-gradient(ellipse at top left, #FFB570 0%, #FF9966 30%, #E16B7A 65%, #B04C74 100%)",
       },
       {
         selector: ".features",
