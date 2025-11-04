@@ -3,7 +3,7 @@ import { useDropzone } from "react-dropzone";
 import "../css/Dropzone.css";
 import sunsetLogo from "../assets/sunset-logo.png";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
-import placeholderThumbnail from "../assets/thumbnail-template.png";
+import sunsetThumbnail from "../assets/sunset_uploader-template.png";
 
 export default function Dropzone({ video, setVideo, caption }) {
   const onDrop = useCallback(
@@ -46,7 +46,7 @@ export default function Dropzone({ video, setVideo, caption }) {
         <div className="video-preview">
           {/* Use static thumbnail instead of video element */}
           <img
-            src={placeholderThumbnail}
+            src={sunsetThumbnail}
             alt="Video Thumbnail"
             className="video-thumbnail"
           />
