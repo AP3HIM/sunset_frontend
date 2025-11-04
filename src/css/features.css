@@ -28,7 +28,7 @@
   width: 340px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(20px);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   color: #ffffff;
@@ -36,7 +36,7 @@
 
 .feature-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .feature-icon {
