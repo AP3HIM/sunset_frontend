@@ -1,0 +1,157 @@
+.pricing-section {
+  display: flex;                 /* Center horizontally & vertically */
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 80px 32px;
+  background: linear-gradient(135deg, #1c1c2b, #251c3a, #3a1c28);
+  min-height: 100vh;
+  text-align: center;
+}
+
+.pricing-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 48px;
+  max-width: 800px;              /* Let it expand if text is long */
+  width: 90%;                    /* Responsive */
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0 auto;                /* Ensure centered on smaller screens */
+  text-align: left;              /* For normal paragraphs */
+}
+
+.pricing-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+/* Headings inside legal pages */
+.pricing-card h1 {
+  margin-bottom: 20px;
+  color: #ffe9b0;
+  font-size: 2.5rem;
+}
+
+/* Body text for legal pages */
+.pricing-card p {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  font-weight: normal;           /* Reset bold from pricing */
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* Links inside legal pages */
+.pricing-card a {
+  color: #ffae42;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.pricing-card a:hover {
+  color: #ffcc70;
+}
+
+/* DEMO PAGE STYLES */
+.glass-section {
+  margin-top: 3rem;
+  padding: 2.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.demo-video-box {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.demo-video-box iframe {
+  width: 100%;
+  max-width: 720px;
+  height: 405px;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Creator section */
+.about-creator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: left;
+  margin-top: 3rem;
+}
+
+/* Creator section */
+.about-creator {
+  text-align: left;
+  margin-top: 3rem;
+}
+
+.creator-info {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Float the image so text wraps naturally */
+.creator-photo {
+  float: left;
+  width: 280px;
+  height: 280px;
+  margin: 0 1.75rem 1.25rem 0;
+  border-radius: 20px;
+  object-fit: cover;
+  border: 3px solid #ffae42;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.creator-photo:hover {
+  transform: scale(1.03);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+}
+
+.creator-text {
+  color: #ddd;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+/* Clear the float after the text to prevent overlap with the next section */
+.creator-info::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .creator-photo {
+    float: none;
+    display: block;
+    margin: 0 auto 1.5rem;
+    width: 80%;
+    height: auto;
+  }
+
+  .creator-text {
+    text-align: left;
+  }
+}

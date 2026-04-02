@@ -1,0 +1,39 @@
+.error-page {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 48px;
+  max-width: 800px;              /* Let it expand if text is long */
+  width: 90%;                    /* Responsive */
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0 auto;                /* Ensure centered on smaller screens */
+  text-align: left;              /* For normal paragraphs */
+}
+
+.error-page:hover{
+  transform: translateY(-8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.error-page-heading{
+  margin-bottom: 20px;
+  color: #ffe9b0;
+  font-size: 2.5rem;
+}
+
+.error-page-para{
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  font-weight: normal;           /* Reset bold from pricing */
+  line-height: 1.6;
+  margin-bottom: 16px;
+
+}
+
+.error-page-links{
+  display: flex;
+  gap: 24px;
+  list-style: none;
+}

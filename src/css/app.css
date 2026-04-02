@@ -1,0 +1,100 @@
+@import url('./globals.css');
+@import url('./hero.css');
+@import url('./features.css');
+@import url('./testimonials.css');
+@import url('./footer.css');
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+body {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100vh;
+  font-family: 'Lato', sans-serif;
+}
+
+section {
+  scroll-snap-align: start;
+}
+
+.app-container {
+  font-family: 'Lato', sans-serif;
+  color: #f5f5f5;
+  background: linear-gradient(to bottom, #0e0e0e, #1c1c1c);
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+/* --------------------------- */
+/* GLOBAL RESPONSIVENESS       */
+/* --------------------------- */
+
+/* Large desktops */
+/*
+@media (min-width: 1440px) {
+  section {
+    padding: 6rem 8rem;
+  }
+}
+*/
+/* Standard desktop */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  section {
+    padding: 4rem 6rem;
+  }
+}
+
+/* Tablets / small laptops */
+@media (min-width: 768px) and (max-width: 1023px) {
+  section {
+    padding: 3rem 2rem;
+  }
+
+  .glass-box {
+    margin: 1.5rem auto;
+    max-width: 700px;
+  }
+}
+
+/* Large phones */
+@media (min-width: 480px) and (max-width: 767px) {
+  section {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .glass-box {
+    margin: 1.25rem auto;
+    max-width: 90%;
+  }
+}
+
+/* Small phones */
+@media (max-width: 479px) {
+  section {
+    padding: 2rem 1rem;
+  }
+
+  .glass-box {
+    margin: 1rem auto;
+    max-width: 95%;
+  }
+
+  h1, h2, h3 {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+  }
+
+  p {
+    font-size: clamp(0.9rem, 4vw, 1rem);
+    line-height: 1.5;
+  }
+
+  button, .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+}

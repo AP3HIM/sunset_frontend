@@ -1,0 +1,54 @@
+/* src/css/footer.css */
+
+.footer {
+  background: linear-gradient(145deg, #000000, #01040A, #0A0F1A);
+  color: #fff;
+  min-height: 60vh; /* makes footer a scrollable section */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1.5rem;
+  margin-top: 3rem;
+}
+
+.footer-scroll-section {
+  display: flex;
+  justify-content: space-around;
+  gap: 2rem;
+  overflow-y: auto; /* scroll if content is too tall */
+  max-height: 50vh;
+  padding-bottom: 1rem;
+  scroll-behavior: smooth;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.footer-links h3 {
+  font-size: 1.2rem;
+  color: #ffa500;
+  margin-bottom: 0.8rem;
+}
+
+.footer-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: #ffae42;
+  transform: translateX(4px);
+}
+
+.footer-right {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-top: 1.5rem;
+  color: #fff;
+}
