@@ -16,7 +16,7 @@ export default function SagePanel({ currentCaption, onInject }) {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:8000/api/sage/generate/", {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/sage/generate/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
