@@ -1,50 +1,67 @@
+/* css/PlatformSelector.css */
 .platform-selector {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+.platform-selector::before {
+  content: 'Platforms';
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #FF7A59;
+  margin-bottom: 4px;
+  display: block;
 }
 
 .platform-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #E8E5E0;
+  background: #FAFAF8;
+  transition: border-color 0.18s ease, background 0.18s ease;
 }
 
 .platform-option:hover:not(.disabled) {
-  background-color: rgba(255, 0, 0, 0.05);
+  border-color: #FFB570;
+  background: #FFF8F4;
 }
 
 .platform-option.disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .platform-circle {
   width: 16px;
   height: 16px;
-  border: 2px solid #ccc;
+  border: 2px solid #D0CEC9;
   border-radius: 50%;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
 }
 
 .platform-circle.selected {
-  background-color: red;
-  border-color: red;
+  background: linear-gradient(135deg, #FF7A59, #E16B7A);
+  border-color: #FF7A59;
 }
 
 .platform-name {
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
-  color: #FEFCF2;
-}
-
-.platform-option:not(.disabled) .platform-name {
-  transition: color 0.2s ease;
+  font-weight: 500;
+  color: #44444F;
+  transition: color 0.18s ease;
 }
 
 .platform-circle.selected + .platform-name {
-  color: red;
+  color: #FF7A59;
+  font-weight: 600;
 }

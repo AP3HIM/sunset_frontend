@@ -5,6 +5,7 @@ import CaptionBox from "../components/CaptionBox";
 import PlatformSelector from "../components/PlatformSelector";
 import Terminal from "../components/Terminal";
 import UploadButton from "../components/UploadButton";
+import SagePanel from "../components/SagePanel";
 import { motion } from "framer-motion";
 import { Download } from "lucide-react";
 import "../css/Upload.css";
@@ -103,6 +104,7 @@ const Upload = () => {
         <Dropzone video={video} setVideo={setVideo} caption={caption} />
         <div className="upload-controls">
           <CaptionBox caption={caption} setCaption={setCaption} />
+          <SagePanel currentCaption={caption} onInject={(text) => setCaption(text)} />
           <PlatformSelector platforms={platforms} setPlatforms={setPlatforms} />
           <UploadButton
             video={video}

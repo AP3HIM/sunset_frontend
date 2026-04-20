@@ -6,7 +6,7 @@ const platformsList = [
   { name: 'Instagram', key: 'instagram' },
   { name: 'TikTok', key: 'tiktok' },
   { name: 'X', key: 'twitter' },
-  { name: 'YouTube', key: 'youtube', disabled: true },
+  { name: 'YouTube', key: 'youtube', disabled: false },
 ];
 
 const PlatformSelector = ({ platforms, setPlatforms }) => {

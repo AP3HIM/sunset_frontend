@@ -5,7 +5,9 @@ const { spawn } = require("child_process");
 const os = require("os");
 
 let currentPythonProcess = null;
-let filePathStore = {}; // filename -> absolute path
+let filePathStore = {};
+
+const PLATFORM_PARTITION = "persist:platforms";
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,55 +32,67 @@ function createWindow() {
   });
 }
 
+function openPlatformWindow(url) {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 900,
+    show: false,
+    webPreferences: {
+      partition: PLATFORM_PARTITION,
+      nodeIntegration: false,
+      contextIsolation: false,
+    },
+  });
+
+  win.loadURL(url);
+
+  win.once("ready-to-show", () => {
+    win.maximize();
+    win.show();
+  });
+
+  return win;
+}
+
 app.whenReady().then(() => {
   createWindow();
   console.log("Preload path:", path.join(__dirname, "preload.cjs"));
-  // Inside app.whenReady().then(() => { ... })
+
   ipcMain.handle("open-file-dialog", async () => {
     const result = await dialog.showOpenDialog({
       title: "Select a video file",
       properties: ["openFile"],
       filters: [
         { name: "Videos", extensions: ["mp4", "mov", "avi", "mkv"] },
-        { name: "All Files", extensions: ["*"] }
-      ]
+        { name: "All Files", extensions: ["*"] },
+      ],
     });
-
     if (!result.canceled && result.filePaths.length > 0) {
       const filePath = result.filePaths[0];
       const fileName = path.basename(filePath);
-
-      filePathStore[fileName] = filePath; // Store in your map
+      filePathStore[fileName] = filePath;
       return { name: fileName, path: filePath };
     }
     return null;
   });
 
   ipcMain.handle("get-signals-dir", () => {
-    return path.join(
-      os.homedir(),
-      "sunsetuploader",
-      "signals"
-    );
+    return path.join(os.homedir(), "sunsetuploader", "signals");
   });
 
-
-
-
-  // Return absolute path for given name (or null)
   ipcMain.handle("get-file-path", (event, filename) => {
     return filePathStore[filename] || null;
   });
 
   ipcMain.handle("ping", () => "pong");
 
-  // run-python: spawn python script and stream stdout/stderr to renderer windows
   ipcMain.handle("run-python", async (event, args) => {
     return new Promise((resolve, reject) => {
       const pythonScript = path.join("C:", "Projects", "PaperTigerUploader_v1", "upload.py");
-      const pythonExecutable = "C:\\Python313\\python.exe"; // full path to python.exe
-      const python = spawn(pythonExecutable, [pythonScript, ...args], { windowsHide: true });
-
+      const pythonExecutable = "C:\\Python313\\python.exe";
+      const python = spawn(pythonExecutable, [pythonScript, ...args], {
+        windowsHide: true,
+      });
 
       currentPythonProcess = python;
       let output = "";
@@ -86,7 +100,9 @@ app.whenReady().then(() => {
       python.stdout.on("data", (data) => {
         const chunk = data.toString();
         output += chunk;
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", chunk));
+        BrowserWindow.getAllWindows().forEach((w) =>
+          w.webContents.send("python-log", chunk)
+        );
       });
 
       python.stderr.on("data", (data) => {
@@ -113,12 +129,11 @@ app.whenReady().then(() => {
     });
   });
 
-
   ipcMain.handle("stop-python", async () => {
     if (currentPythonProcess) {
       try {
         if (process.platform === "win32") {
-          currentPythonProcess.kill(); // default on windows
+          currentPythonProcess.kill();
         } else {
           currentPythonProcess.kill("SIGTERM");
         }
@@ -131,13 +146,49 @@ app.whenReady().then(() => {
     return "No active process";
   });
 
-  // Store absolute path for given filename
   ipcMain.handle("store-file-path", (event, name, fullPath) => {
     if (name && fullPath) {
       filePathStore[name] = fullPath;
       return true;
     }
     return false;
+  });
+
+  // ── NEW: Open a maximized BrowserWindow for TikTok/Instagram/YouTube ────────
+  ipcMain.handle("open-platform-window", async (event, { platform, url }) => {
+    const win = openPlatformWindow(url);
+    return win.id;
+  });
+
+  // ── NEW: Inject JS into the platform window ──────────────────────────────────
+  ipcMain.handle("inject-js", async (event, { windowId, script }) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (!win) return { ok: false, error: "Window not found" };
+    try {
+      const result = await win.webContents.executeJavaScript(script);
+      return { ok: true, result };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  // ── NEW: Wait for platform window page to finish loading ─────────────────────
+  ipcMain.handle("wait-for-platform-load", (event, windowId) => {
+    return new Promise((resolve, reject) => {
+      const win = BrowserWindow.fromId(windowId);
+      if (!win) return reject("Window not found");
+      const timeout = setTimeout(() => reject("Page load timeout"), 30000);
+      win.webContents.once("did-finish-load", () => {
+        clearTimeout(timeout);
+        setTimeout(resolve, 1500);
+      });
+    });
+  });
+
+  // ── NEW: Close platform window ───────────────────────────────────────────────
+  ipcMain.handle("close-platform-window", async (event, windowId) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (win && !win.isDestroyed()) win.close();
   });
 });
 

@@ -1,16 +1,20 @@
 /* css/Upload.css */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap');
+
 .upload-container {
-  max-width: 1200px;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 48px 52px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
+  min-height: calc(100vh - 64px);
 }
 
 .upload-main {
-  display: flex;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 52px;
   align-items: flex-start;
 }
 
@@ -18,5 +22,177 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
+  padding-top: 8px;
+}
+
+/* ── Section labels ────────────────────────────────────────── */
+.upload-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #FF7A59;
+  margin-bottom: 10px;
+  display: block;
+}
+
+/* ── Non-electron screen (Desktop Required) ───────────────── */
+.hero-bg {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px;
+  background: linear-gradient(
+    148deg,
+    #FFB570 0%,
+    #FF7759 20%,
+    #D64F8A 52%,
+    #7B2ABF 78%,
+    #0E0820 100%
+  );
+}
+
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  margin-bottom: 20px;
+  line-height: 1.05;
+}
+
+.hero-bg-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.75);
+  max-width: 480px;
+  margin-bottom: 40px;
+}
+
+.cta-container {
+  display: flex;
+  justify-content: center;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  color: #A02868;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 13px 30px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 26px rgba(0,0,0,0.3);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Popup ─────────────────────────────────────────────────── */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.popup {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.popup h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0F0F1A;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.popup p {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #44444F;
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.popup-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  background: linear-gradient(135deg, #FF7A59, #E16B7A);
+  color: #ffffff;
+  transition: transform 0.18s, box-shadow 0.18s;
+  box-shadow: 0 2px 12px rgba(225,107,122,0.3);
+}
+
+.popup-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(225,107,122,0.4);
+}
+
+.popup-btn.cancel {
+  background: #F5F2EE;
+  color: #44444F;
+  box-shadow: none;
+}
+
+.popup-btn.cancel:hover {
+  background: #ECEAE6;
+  box-shadow: none;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .upload-container { padding: 32px 24px; }
+  .upload-main {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
 }

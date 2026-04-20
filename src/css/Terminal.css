@@ -1,15 +1,52 @@
+/* css/Terminal.css */
 .terminal-feed {
-  background-color: #000;
-  color: #39ff14;
-  font-family: monospace;
-  padding: 16px;
-  height: 192px;
-  overflow-y: scroll;
-  border-radius: 8px;
-  border: 1px solid #222;
+  background: #0A0A14;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 20px 24px;
+  height: 200px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  position: relative;
+}
+
+/* Subtle top label */
+.terminal-feed::before {
+  content: 'Upload Log';
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  margin-bottom: 12px;
 }
 
 .terminal-line {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.7);
   white-space: pre-wrap;
-  line-height: 1.4;
+  word-break: break-all;
+}
+
+/* Color log lines that look like errors */
+.terminal-line:is([data-type="error"]) {
+  color: #FF6B6B;
+}
+
+/* Scrollbar styling */
+.terminal-feed::-webkit-scrollbar {
+  width: 4px;
+}
+.terminal-feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+.terminal-feed::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+.terminal-feed::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.22);
 }

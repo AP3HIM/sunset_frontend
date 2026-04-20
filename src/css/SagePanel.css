@@ -1,0 +1,103 @@
+.sage-panel {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.sage-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sage-badge {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.sage-subtitle {
+  color: #666;
+  font-size: 12px;
+}
+
+.sage-generate-btn {
+  width: 100%;
+  padding: 9px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sage-generate-btn:hover:not(:disabled) {
+  background: #222;
+  border-color: #f97316;
+}
+
+.sage-generate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sage-error {
+  color: #f87171;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.sage-results {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sage-result-item {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sage-caption-text {
+  color: #e5e5e5;
+  font-size: 13px;
+  margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.sage-inject-btn {
+  background: transparent;
+  border: 1px solid #f97316;
+  color: #f97316;
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+
+.sage-inject-btn:hover {
+  background: #f97316;
+  color: white;
+}
