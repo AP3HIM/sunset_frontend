@@ -18,13 +18,12 @@ export default function Demo() {
           <h2>Product Demo Video</h2>
           <p>
             Watch the full walkthrough of how to upload content automatically to
-            multiple platforms using our AI-powered uploader. The demo video
-            will be embedded here once it’s ready.
+            multiple platforms using our AI-powered uploader.
           </p>
 
           <div className="demo-video-box">
             <iframe
-              src="https://www.youtube.com/embed/0ra9xQ1qjJg?si=64oDR6wsH5A_RLNl"
+              src="https://www.youtube.com/shorts/_kT6eFrdpYM"
               title="SunsetUploader Demo Video"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -42,15 +41,15 @@ export default function Demo() {
             />
             <div className="creator-text">
               <p>
-                Hey there — I’m <strong>Adi</strong>, the developer behind{" "}
+                Hey, I’m <strong>Adi</strong>, the developer behind{" "}
                 <em>SunsetUploader</em>. I built this platform to simplify the
                 multi-platform uploading process for creators. I’ve had too many
                 late nights uploading the same video again and again across
-                sites. <strong>SunsetUploader</strong> fixes that — saving hours
+                sites. <strong>SunsetUploader</strong> fixes that and saveshours
                 of time every week.
               </p>
               <p>
-                My background combines programming, design, and automation — all
+                My background combines programming, design, and automation, all
                 focused on empowering creators to spend less time managing
                 uploads and more time creating.
               </p>
