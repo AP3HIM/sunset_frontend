@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("wait-for-platform-load", windowId),
   closePlatformWindow: (windowId) =>
     ipcRenderer.invoke("close-platform-window", windowId),
+  openPlatformWindow: (platform, url) =>
+    ipcRenderer.invoke("open-platform-window", { platform, url }),
 });
 
 contextBridge.exposeInMainWorld("electronEnv", {

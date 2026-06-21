@@ -56,3 +56,9 @@
   color: #9999AA;
   margin: 0 0 6px 0;
 }
+
+/* Add this to the bottom of css/CaptionBox.css */
+
+.description-input::before {
+  content: 'Description (YouTube only)';
+}

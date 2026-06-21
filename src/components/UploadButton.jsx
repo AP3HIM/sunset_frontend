@@ -40,45 +40,29 @@ export default function UploadButton({ video, caption, platforms, setLogs }) {
     console.log("Video path:", videoPath);
     setLogs([]);
     setIsRunning(true);
+    console.log("PLATFORMS ARRAY:", JSON.stringify(platforms));
 
     if (window.electronAPI) {
       window.electronAPI.onPythonLog((line) => log(line));
-
-      const hasNewAPI =
-        typeof window.electronAPI.openPlatformWindow === "function";
-
-      if (window.electronAPI) {
-          window.electronAPI.onPythonLog((line) => log(line));
-
-          try {
-            const platformArgs =
-              platforms.length > 0 ? ["--platforms", ...platforms] : [];
-            await window.electronAPI.runPythonUploader([
-              "--caption", caption,
-              "--video", videoPath,
-              ...platformArgs,
-            ]);
-          } catch (err) {
-            log(`Error: ${err.message || err}`);
-          } finally {
-            setIsRunning(false);
-          }
-          return;
-        }
-        else {
-        try {
-          const platformArgs =
-            platforms.length > 0 ? ["--platforms", ...platforms] : [];
+      try {
+        if (platforms.includes("instagram")) {
+          await runInstagramHybrid(videoPath, caption, log);
+        } else if (platforms.includes("youtube")) {
+          await runYouTubeHybrid(videoPath, caption, log);
+        } else if (platforms.includes("tiktok")) {
+          await runTikTokHybrid(videoPath, caption, log);
+        } else {
+          const platformArgs = platforms.length > 0 ? ["--platforms", ...platforms] : [];
           await window.electronAPI.runPythonUploader([
             "--caption", caption,
             "--video", videoPath,
             ...platformArgs,
           ]);
-        } catch (err) {
-          log(`Error: ${err.message || err}`);
-        } finally {
-          setIsRunning(false);
         }
+      } catch (err) {
+        log(`Error: ${err.message || err}`);
+      } finally {
+        setIsRunning(false);
       }
       return;
     }
@@ -128,6 +112,8 @@ export default function UploadButton({ video, caption, platforms, setLogs }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runYouTubeHybrid(videoPath, caption, log) {
+  console.log("YT CAPTION RECEIVED:", caption);
+
   const api = window.electronAPI;
 
   log("Opening YouTube Studio...");
@@ -192,28 +178,6 @@ async function runYouTubeHybrid(videoPath, caption, log) {
   }
   log("PAG: File selected.");
 
-  // ── DOM: Wait for details page then fill title ────────────────────────────
-  log("DOM: Waiting for details page...");
-  const titleSafe = JSON.stringify(caption);
-  const detailsResult = await api.injectJS(windowId, `
-    new Promise((resolve) => {
-      const start = Date.now();
-      const iv = setInterval(() => {
-        const boxes = document.querySelectorAll('#textbox');
-        if (boxes.length >= 2) {
-          clearInterval(iv);
-          boxes[0].focus();
-          boxes[0].innerText = ${titleSafe};
-          boxes[0].dispatchEvent(new Event('input', { bubbles: true }));
-          resolve({ ok: true });
-        }
-        if (Date.now() - start > 60000) { clearInterval(iv); resolve({ ok: false }); }
-      }, 500);
-    })
-  `);
-  if (detailsResult?.ok) { log("DOM: Title set."); } else { log("DOM: Title timeout — continuing anyway."); }
-  await new Promise(r => setTimeout(r, 500));
-
   // ── DOM: Set Not for kids ─────────────────────────────────────────────────
   log("DOM: Setting Not for kids...");
   await api.injectJS(windowId, `
@@ -235,6 +199,17 @@ async function runYouTubeHybrid(videoPath, caption, log) {
   `);
   log("DOM: Not for kids set.");
   await new Promise(r => setTimeout(r, 500));
+  /*
+  log("PAG: Writing title...");
+  await api.runPythonUploader([
+    "--mode", "write-title",
+    "--platforms", "youtube",
+    "--video", videoPath,
+    "--caption", caption,
+  ]);
+  log("PAG: Title written.");
+  await new Promise(r => setTimeout(r, 500));
+  */
 
   // ── DOM: Click Next x3 ───────────────────────────────────────────────────
   for (let i = 1; i <= 3; i++) {
@@ -419,6 +394,10 @@ async function runInstagramHybrid(videoPath, caption, log) {
   log("PAG: Selecting file...");
   await api.runPythonUploader(["--mode", "file-select-only", "--platforms", "instagram", "--video", videoPath, "--caption", caption]);
   log("PAG: File selected.");
+
+  await new Promise(r => setTimeout(r, 1500)); // let crop animation settle before Next
+
+  await new Promise(r => setTimeout(r, 600));
   await clickIGText(api, windowId, "next", 30000, log);
   await new Promise(r => setTimeout(r, 800));
   await clickIGText(api, windowId, "next", 15000, log);
