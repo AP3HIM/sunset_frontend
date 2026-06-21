@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import Dropzone from "../components/Dropzone";
 import CaptionBox from "../components/CaptionBox";
-import Description from '../components/Description';
 import PlatformSelector from "../components/PlatformSelector";
 import Terminal from "../components/Terminal";
 import UploadButton from "../components/UploadButton";
@@ -19,7 +18,6 @@ const Upload = () => {
 
   const [video, setVideo] = useState(null);
   const [caption, setCaption] = useState('');
-  const [description, setDescription] = useState('');
   const [platforms, setPlatforms] = useState([]);
   const [logs, setLogs] = useState([]);
 
@@ -106,7 +104,6 @@ const Upload = () => {
         <Dropzone video={video} setVideo={setVideo} caption={caption} />
         <div className="upload-controls">
           <CaptionBox caption={caption} setCaption={setCaption} />
-          <Description description={description} setDescription={setDescription} />
           <SagePanel currentCaption={caption} onInject={(text) => setCaption(text)} />
           <PlatformSelector platforms={platforms} setPlatforms={setPlatforms} />
           <UploadButton
