@@ -45,20 +45,12 @@ export default function UploadButton({ video, caption, platforms, setLogs }) {
     if (window.electronAPI) {
       window.electronAPI.onPythonLog((line) => log(line));
       try {
-        if (platforms.includes("instagram")) {
-          await runInstagramHybrid(videoPath, caption, log);
-        } else if (platforms.includes("youtube")) {
-          await runYouTubeHybrid(videoPath, caption, log);
-        } else if (platforms.includes("tiktok")) {
-          await runTikTokHybrid(videoPath, caption, log);
-        } else {
-          const platformArgs = platforms.length > 0 ? ["--platforms", ...platforms] : [];
-          await window.electronAPI.runPythonUploader([
-            "--caption", caption,
-            "--video", videoPath,
-            ...platformArgs,
-          ]);
-        }
+        const platformArgs = platforms.length > 0 ? ["--platforms", ...platforms] : [];
+        await window.electronAPI.runPythonUploader([
+          "--caption", caption,
+          "--video", videoPath,
+          ...platformArgs,
+        ]);
       } catch (err) {
         log(`Error: ${err.message || err}`);
       } finally {
