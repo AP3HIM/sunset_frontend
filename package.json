@@ -6,7 +6,7 @@
   "description": "An Electron App to complete change the way content creators and anyone else in the world uploads content.",
   "author": "Adi Patel",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "vite": "vite",
     "build": "vite build",
     "dist": "npm run build && electron-builder"
@@ -34,6 +34,7 @@
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.0",
+    "cross-env": "^10.1.0",
     "electron": "^37.2.5",
     "electron-builder": "^26.0.12",
     "eslint": "^9.30.1",
