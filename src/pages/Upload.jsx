@@ -100,6 +100,10 @@ const Upload = () => {
   // If Electron, show your original uploader components
   return (
     <div className="upload-container">
+      <div className="failsafe-banner">
+        <strong>PyAutoGUI Failsafe:</strong> if automation ever clicks the wrong thing,
+        slam your mouse into the <strong>top-left corner</strong> of the screen to instantly abort.
+      </div>
       <div className="upload-main">
         <Dropzone video={video} setVideo={setVideo} caption={caption} />
         <div className="upload-controls">
