@@ -46,7 +46,7 @@
     "vite": "^7.0.4",
     "wait-on": "^8.0.4"
   },
-  "build": {
+    "build": {
     "appId": "com.sunsetuploader.app",
     "productName": "SunsetUploader",
     "directories": {
@@ -56,6 +56,10 @@
       "dist/**/*",
       "electron.cjs",
       "preload.cjs"
+    ],
+    "extraFiles": [
+      "python/**",
+      "upload.py"
     ],
     "win": {
       "target": "nsis",
