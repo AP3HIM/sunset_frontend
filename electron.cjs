@@ -1,4 +1,4 @@
-// electron.cjs (main process)
+ // electron.cjs (main process)
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -6,7 +6,6 @@ const os = require("os");
 
 let currentPythonProcess = null;
 let filePathStore = {};
-
 const PLATFORM_PARTITION = "persist:platforms";
 
 function createWindow() {
@@ -45,12 +44,10 @@ function openPlatformWindow(url) {
   });
 
   win.loadURL(url);
-
   win.once("ready-to-show", () => {
     win.maximize();
     win.show();
   });
-
   return win;
 }
 
@@ -67,6 +64,7 @@ app.whenReady().then(() => {
         { name: "All Files", extensions: ["*"] },
       ],
     });
+
     if (!result.canceled && result.filePaths.length > 0) {
       const filePath = result.filePaths[0];
       const fileName = path.basename(filePath);
@@ -88,42 +86,44 @@ app.whenReady().then(() => {
 
   ipcMain.handle("run-python", async (event, args) => {
     return new Promise((resolve, reject) => {
-      const pythonScript = path.join("C:", "Projects", "PaperTigerUploader_v1", "upload.py");
-      const pythonExecutable = "C:\\Python313\\python.exe";
+      const isDev = !app.isPackaged;
+     
+      // Dynamic portable executable path
+      const pythonExecutable = isDev
+        ? path.join(__dirname, "python", "python.exe")
+        : path.join(process.resourcesPath, "python", "python.exe");
+
+      // Dynamic portable script path
+      const pythonScript = isDev
+        ? path.join(__dirname, "upload.py")
+        : path.join(process.resourcesPath, "upload.py");
+
       const python = spawn(pythonExecutable, [pythonScript, ...args], {
         windowsHide: true,
       });
-
+     
       currentPythonProcess = python;
       let output = "";
 
       python.stdout.on("data", (data) => {
         const chunk = data.toString();
         output += chunk;
-        BrowserWindow.getAllWindows().forEach((w) =>
-          w.webContents.send("python-log", chunk)
-        );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", chunk) );
       });
 
       python.stderr.on("data", (data) => {
-        BrowserWindow.getAllWindows().forEach((w) =>
-          w.webContents.send("python-log", `ERR: ${data.toString()}`)
-        );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `ERR: ${data.toString()}`) );
       });
 
       python.on("close", (code) => {
-        BrowserWindow.getAllWindows().forEach((w) =>
-          w.webContents.send("python-log", `Python exited with code ${code}`)
-        );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Python exited with code ${code}`) );
         currentPythonProcess = null;
         if (code === 0) resolve(output);
         else reject(output);
       });
 
       python.on("error", (err) => {
-        BrowserWindow.getAllWindows().forEach((w) =>
-          w.webContents.send("python-log", `Spawn error: ${err.message}`)
-        );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Spawn error: ${err.message}`) );
         reject(err);
       });
     });

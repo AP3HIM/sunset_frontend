@@ -57,6 +57,12 @@
       "electron.cjs",
       "preload.cjs"
     ],
+    "extraFiles": [
+      "python/**",
+      "upload.py",
+      "utils.py",
+      "amp/**"
+    ],
     "win": {
       "target": "nsis",
       "icon": "build/sunset-logo-resized-1024.ico"
