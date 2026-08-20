@@ -1,4 +1,4 @@
- // electron.cjs (main process)
+// electron.cjs (main process)
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -87,7 +87,7 @@ app.whenReady().then(() => {
   ipcMain.handle("run-python", async (event, args) => {
     return new Promise((resolve, reject) => {
       const isDev = !app.isPackaged;
-     
+
       // Dynamic portable executable path
       const pythonExecutable = isDev
         ? path.join(__dirname, "python", "python.exe")
@@ -101,29 +101,29 @@ app.whenReady().then(() => {
       const python = spawn(pythonExecutable, [pythonScript, ...args], {
         windowsHide: true,
       });
-     
+
       currentPythonProcess = python;
       let output = "";
 
       python.stdout.on("data", (data) => {
         const chunk = data.toString();
         output += chunk;
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", chunk) );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", chunk));
       });
 
       python.stderr.on("data", (data) => {
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `ERR: ${data.toString()}`) );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `ERR: ${data.toString()}`));
       });
 
       python.on("close", (code) => {
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Python exited with code ${code}`) );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Python exited with code ${code}`));
         currentPythonProcess = null;
         if (code === 0) resolve(output);
         else reject(output);
       });
 
       python.on("error", (err) => {
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Spawn error: ${err.message}`) );
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Spawn error: ${err.message}`));
         reject(err);
       });
     });

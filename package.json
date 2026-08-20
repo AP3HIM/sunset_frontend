@@ -58,10 +58,18 @@
       "preload.cjs"
     ],
     "extraFiles": [
-      "python/**",
+      {
+        "from": "python",
+        "to": "python",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "amp",
+        "to": "amp",
+        "filter": ["**/*"]
+      },
       "upload.py",
-      "utils.py",
-      "amp/**"
+      "utils.py"
     ],
     "win": {
       "target": "nsis",
