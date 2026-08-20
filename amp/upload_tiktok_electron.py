@@ -12,7 +12,12 @@ import json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGES_DIR = os.path.join(BASE_DIR, '../images')
 
-SIGNALS_DIR = r"C:\Users\adipa\sunsetuploader\signals"
+SIGNALS_DIR = os.path.join(
+    os.path.expanduser("~"),
+    "sunsetuploader",
+    "signals"
+)
+
 os.makedirs(SIGNALS_DIR, exist_ok=True)
 
 def _log(*args):
