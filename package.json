@@ -60,16 +60,12 @@
     "extraFiles": [
       {
         "from": "python",
-        "to": "python",
-        "filter": ["**/*"]
+        "to": "resources/python"
       },
       {
         "from": "amp",
-        "to": "amp",
-        "filter": ["**/*"]
-      },
-      "upload.py",
-      "utils.py"
+        "to": "resources/python/amp"
+      }
     ],
     "win": {
       "target": "nsis",

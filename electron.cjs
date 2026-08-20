@@ -95,8 +95,8 @@ app.whenReady().then(() => {
 
       // Dynamic portable script path
       const pythonScript = isDev
-        ? path.join(__dirname, "upload.py")
-        : path.join(process.resourcesPath, "upload.py");
+        ? path.join(__dirname, "python", "upload.py")
+        : path.join(process.resourcesPath, "python", "upload.py");
 
       const python = spawn(pythonExecutable, [pythonScript, ...args], {
         windowsHide: true,
