@@ -71,5 +71,8 @@
       "target": "nsis",
       "icon": "build/sunset-logo-resized-1024.ico"
     }
+  },
+  "allowScripts": {
+    "electron@37.2.5": true
   }
 }

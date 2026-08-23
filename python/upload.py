@@ -20,7 +20,7 @@ except ImportError:
     pyperclip = None
 
 from amp import upload_instagram_electron, upload_tiktok_electron, upload_twitter_electron, upload_youtube_electron
-from utils import launch_chrome, open_new_tab_and_search
+from utils import launch_chrome, open_new_tab_and_search, launch_chrome_cdp
 
 print("Raw sys.argv:", sys.argv)
 
@@ -172,6 +172,7 @@ def main():
 
     # ── full legacy PAG ───────────────────────────────────────────────────────
     print(f"Full PAG mode for: {platforms}")
+
     launch_chrome()
     time.sleep(1)
 
