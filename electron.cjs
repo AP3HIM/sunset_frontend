@@ -1,8 +1,9 @@
 // electron.cjs (main process)
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, screen } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 const os = require("os");
+const fs = require("fs");
 
 let currentPythonProcess = null;
 let filePathStore = {};
@@ -55,6 +56,81 @@ app.whenReady().then(() => {
   createWindow();
   console.log("Preload path:", path.join(__dirname, "preload.cjs"));
 
+  function getCalibrationPath() {
+    return path.join(os.homedir(), "sunsetuploader", "click_calibration.json");
+  }
+
+  function loadCalibration() {
+    try {
+      const raw = fs.readFileSync(getCalibrationPath(), "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+
+  function saveCalibrationPoint(platformKey, action, x, y) {
+    const data = loadCalibration();
+    if (!data[platformKey]) data[platformKey] = {};
+    data[platformKey][action] = [x, y];
+    const dir = path.dirname(getCalibrationPath());
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(getCalibrationPath(), JSON.stringify(data, null, 2));
+    return data;
+  }
+
+  let calibrationPollInterval = null;
+
+  function startCalibrationCapture(event, { platform, action, holdMs = 2500, tolerancePx = 12 }) {
+    stopCalibrationCapture();
+
+    let refPoint = null;
+    let stableStart = null;
+
+    calibrationPollInterval = setInterval(() => {
+      const pt = screen.getCursorScreenPoint();
+
+      if (!refPoint) {
+        refPoint = pt;
+        stableStart = Date.now();
+        return;
+      }
+
+      const dx = Math.abs(pt.x - refPoint.x);
+      const dy = Math.abs(pt.y - refPoint.y);
+
+      if (dx > tolerancePx || dy > tolerancePx) {
+        refPoint = pt;
+        stableStart = Date.now();
+        event.sender.send("calibration-progress", { elapsed: 0, holdMs, reset: true });
+        return;
+      }
+
+      const elapsed = Date.now() - stableStart;
+      event.sender.send("calibration-progress", { elapsed, holdMs, reset: false });
+
+      if (elapsed >= holdMs) {
+        stopCalibrationCapture();
+        const data = saveCalibrationPoint(platform, action, pt.x, pt.y);
+        event.sender.send("calibration-captured", { platform, action, x: pt.x, y: pt.y, data });
+      }
+    }, 100);
+  }
+
+  function stopCalibrationCapture() {
+    if (calibrationPollInterval) {
+      clearInterval(calibrationPollInterval);
+      calibrationPollInterval = null;
+    }
+  }
+
+  // These three registrations were missing from what you pasted — the
+  // capture/save functions existed but nothing connected them to IPC, so
+  // the renderer had no channel to actually call.
+  ipcMain.on("start-calibration-capture", startCalibrationCapture);
+  ipcMain.on("cancel-calibration-capture", stopCalibrationCapture);
+  ipcMain.handle("load-calibration", () => loadCalibration());
+
   ipcMain.handle("open-file-dialog", async () => {
     const result = await dialog.showOpenDialog({
       title: "Select a video file",
@@ -88,12 +164,10 @@ app.whenReady().then(() => {
     return new Promise((resolve, reject) => {
       const isDev = !app.isPackaged;
 
-      // Dynamic portable executable path
       const pythonExecutable = isDev
         ? path.join(__dirname, "python", "python.exe")
         : path.join(process.resourcesPath, "python", "python.exe");
 
-      // Dynamic portable script path
       const pythonScript = isDev
         ? path.join(__dirname, "python", "upload.py")
         : path.join(process.resourcesPath, "python", "upload.py");
@@ -154,13 +228,11 @@ app.whenReady().then(() => {
     return false;
   });
 
-  // ── NEW: Open a maximized BrowserWindow for TikTok/Instagram/YouTube ────────
   ipcMain.handle("open-platform-window", async (event, { platform, url }) => {
     const win = openPlatformWindow(url);
     return win.id;
   });
 
-  // ── NEW: Inject JS into the platform window ──────────────────────────────────
   ipcMain.handle("inject-js", async (event, { windowId, script }) => {
     const win = BrowserWindow.fromId(windowId);
     if (!win) return { ok: false, error: "Window not found" };
@@ -172,7 +244,6 @@ app.whenReady().then(() => {
     }
   });
 
-  // ── NEW: Wait for platform window page to finish loading ─────────────────────
   ipcMain.handle("wait-for-platform-load", (event, windowId) => {
     return new Promise((resolve, reject) => {
       const win = BrowserWindow.fromId(windowId);
@@ -185,7 +256,6 @@ app.whenReady().then(() => {
     });
   });
 
-  // ── NEW: Close platform window ───────────────────────────────────────────────
   ipcMain.handle("close-platform-window", async (event, windowId) => {
     const win = BrowserWindow.fromId(windowId);
     if (win && !win.isDestroyed()) win.close();
