@@ -1,12 +1,14 @@
 // electron.cjs (main process)
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 const os = require("os");
+const fs = require("fs");
 
 let currentPythonProcess = null;
 let filePathStore = {};
 const PLATFORM_PARTITION = "persist:platforms";
+const CALIBRATION_HOTKEY = "F9";
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -55,6 +57,58 @@ app.whenReady().then(() => {
   createWindow();
   console.log("Preload path:", path.join(__dirname, "preload.cjs"));
 
+  function getCalibrationPath() {
+    return path.join(os.homedir(), "sunsetuploader", "click_calibration.json");
+  }
+
+  function loadCalibration() {
+    try {
+      const raw = fs.readFileSync(getCalibrationPath(), "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+
+  function saveCalibrationPoint(platformKey, action, x, y) {
+    const data = loadCalibration();
+    if (!data[platformKey]) data[platformKey] = {};
+    data[platformKey][action] = [x, y];
+    const dir = path.dirname(getCalibrationPath());
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(getCalibrationPath(), JSON.stringify(data, null, 2));
+    return data;
+  }
+
+  // Hotkey-based capture: user hovers the real target in Chrome (fully
+  // visible, no window switching needed) and taps a global hotkey. This
+  // works no matter which window has focus, and there's no hidden timer to
+  // lose track of — the keypress IS the confirmation.
+  function startCalibrationCapture(event, { platform, action, hotkey = CALIBRATION_HOTKEY }) {
+    stopCalibrationCapture(); // clear any previous registration first
+
+    const registered = globalShortcut.register(hotkey, () => {
+      const pt = screen.getCursorScreenPoint();
+      stopCalibrationCapture();
+      const data = saveCalibrationPoint(platform, action, pt.x, pt.y);
+      event.sender.send("calibration-captured", { platform, action, x: pt.x, y: pt.y, data });
+    });
+
+    if (!registered) {
+      event.sender.send("calibration-error", {
+        message: `Couldn't set up the ${hotkey} shortcut — something else on your system might already be using it.`,
+      });
+    }
+  }
+
+  function stopCalibrationCapture() {
+    globalShortcut.unregisterAll();
+  }
+
+  ipcMain.on("start-calibration-capture", startCalibrationCapture);
+  ipcMain.on("cancel-calibration-capture", stopCalibrationCapture);
+  ipcMain.handle("load-calibration", () => loadCalibration());
+
   ipcMain.handle("open-file-dialog", async () => {
     const result = await dialog.showOpenDialog({
       title: "Select a video file",
@@ -88,12 +142,10 @@ app.whenReady().then(() => {
     return new Promise((resolve, reject) => {
       const isDev = !app.isPackaged;
 
-      // Dynamic portable executable path
       const pythonExecutable = isDev
         ? path.join(__dirname, "python", "python.exe")
         : path.join(process.resourcesPath, "python", "python.exe");
 
-      // Dynamic portable script path
       const pythonScript = isDev
         ? path.join(__dirname, "python", "upload.py")
         : path.join(process.resourcesPath, "python", "upload.py");
@@ -154,13 +206,11 @@ app.whenReady().then(() => {
     return false;
   });
 
-  // ── NEW: Open a maximized BrowserWindow for TikTok/Instagram/YouTube ────────
   ipcMain.handle("open-platform-window", async (event, { platform, url }) => {
     const win = openPlatformWindow(url);
     return win.id;
   });
 
-  // ── NEW: Inject JS into the platform window ──────────────────────────────────
   ipcMain.handle("inject-js", async (event, { windowId, script }) => {
     const win = BrowserWindow.fromId(windowId);
     if (!win) return { ok: false, error: "Window not found" };
@@ -172,7 +222,6 @@ app.whenReady().then(() => {
     }
   });
 
-  // ── NEW: Wait for platform window page to finish loading ─────────────────────
   ipcMain.handle("wait-for-platform-load", (event, windowId) => {
     return new Promise((resolve, reject) => {
       const win = BrowserWindow.fromId(windowId);
@@ -185,11 +234,16 @@ app.whenReady().then(() => {
     });
   });
 
-  // ── NEW: Close platform window ───────────────────────────────────────────────
   ipcMain.handle("close-platform-window", async (event, windowId) => {
     const win = BrowserWindow.fromId(windowId);
     if (win && !win.isDestroyed()) win.close();
   });
+});
+
+// Always release the global hotkey when the app quits — an unreleased
+// global shortcut can interfere with other apps on the system.
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on("window-all-closed", () => {
