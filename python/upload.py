@@ -20,7 +20,7 @@ except ImportError:
     pyperclip = None
 
 from amp import upload_instagram_electron, upload_tiktok_electron, upload_twitter_electron, upload_youtube_electron
-from utils import launch_chrome, open_new_tab_and_search, launch_chrome_cdp
+from utils import launch_chrome, open_new_tab_and_search
 
 print("Raw sys.argv:", sys.argv)
 
@@ -88,6 +88,25 @@ def write_youtube_signal(caption, video_file):
     with open(signal_path, "w", encoding="utf-8") as f:
         json.dump(payload, f)
     print(f"[YT] Signal written to {signal_path}")
+'''
+def paste_path_and_confirm(video_path):
+    """
+    Handles the Windows native file picker currently opened by Electron.
+    """
+
+    time.sleep(0.5)
+
+    # Focus filename/path field
+    pyautogui.hotkey("ctrl", "l")
+    time.sleep(0.2)
+
+    # Replace anything currently selected
+    pyautogui.write(video_path, interval=0.001)
+    time.sleep(0.2)
+
+    # Open the selected file
+    pyautogui.press("enter")
+'''
 
 def main():
     parser = argparse.ArgumentParser()
@@ -114,18 +133,33 @@ def main():
     # ── file-select-only ─────────────────────────────────────────────────────
     if mode == "file-select-only":
         platform_arg = platforms[0] if platforms else None
-        print(f"File-select-only for: {platform_arg}")
-        if platform_arg == "tiktok":
-            upload_tiktok_electron.select_file_only(video, paste_path_and_confirm)
-        elif platform_arg == "instagram":
-            upload_instagram_electron.select_file_only(video, paste_path_and_confirm, select_crop=True)  # <-- add this
-        elif platform_arg == "youtube":
-            upload_youtube_electron.select_file_only(video, paste_path_and_confirm)
-        elif platform_arg == "twitter":
-            upload_twitter_electron.select_file_only(video, paste_path_and_confirm)
-        print("File selection complete.")
-        return
 
+        print(f"File-select-only for: {platform_arg}", flush=True)
+
+        if platform_arg == "tiktok":
+            upload_tiktok_electron.select_file_only(
+                video,
+                paste_path_and_confirm,
+            )
+            return
+
+        if platform_arg == "instagram":
+            upload_instagram_electron.select_file_only(
+                video,
+                paste_path_and_confirm,
+            )
+            return
+
+        if platform_arg == "youtube":
+            upload_youtube_electron.select_file_only(
+                video,
+                paste_path_and_confirm,
+            )
+            return
+
+        raise ValueError(
+            f"Unsupported platform for file selection: {platform_arg}"
+        )
     # ── pag-fallback ─────────────────────────────────────────────────────────
     if mode == "pag-fallback":
         platform_arg = platforms[0] if platforms else None
@@ -172,7 +206,6 @@ def main():
 
     # ── full legacy PAG ───────────────────────────────────────────────────────
     print(f"Full PAG mode for: {platforms}")
-
     launch_chrome()
     time.sleep(1)
 

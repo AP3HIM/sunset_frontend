@@ -1,14 +1,22 @@
 # upload_tiktok_electron.py
 #
-# Tiered click strategy, in order of preference:
-#   Tier 0 — Electron bridge: trusted click on a DOM element found by text.
-#            Resolution/DPI independent. Requires session + bridge running.
-#   Tier 1 — Multi-scale OpenCV image match. Resolution-tolerant fallback for
-#            anything the bridge can't find (canvas-rendered UI, etc).
-#   Tier 2 — Verified Tab navigation: press Tab via bridge, read back
-#            document.activeElement, confirm it matches before acting.
-#   Tier 3 — Original coordinate-box fallback. Last resort, kept so this
-#            never regresses below what you had before.
+# Post is handled entirely by the Chrome extension (tiktok.js), auto-
+# triggered by background.js ~24s after any tiktok.com page load — that
+# happens independently of this file, outside Python entirely. This file
+# only handles what the extension can't: selecting the video file (needs a
+# trusted OS-level click to open the native file dialog) and typing the
+# caption. Tiered click strategy for those two:
+#   Tier 1 — Multi-scale OpenCV image match. Resolution-tolerant.
+#   Tier 1.5 — This machine's saved calibration point (see calibration.py).
+#              The guaranteed backup — set up once per machine.
+#   Tier 3 — Blind coordinate box. Last resort, kept so this never
+#            regresses below the original behavior.
+#
+# `session`/`cdp_bridge` below are dead code from an earlier CDP-based
+# approach that got blocked by Chrome's own security policy on this
+# project's machines — session is always None in current usage (upload.py
+# never passes one), so those tiers always no-op safely. Left in place
+# rather than ripped out mid-project; harmless either way.
 
 import os
 import time
@@ -18,6 +26,7 @@ import pyautogui
 import pyperclip
 
 import cdp_bridge as bridge
+import calibration
 
 try:
     import cv2
@@ -140,8 +149,15 @@ def verified_tab_to(session, target_text, max_tabs=12):
     return False
 
 
-def click_target(session, text, image_name=None, legacy_fallback=None, legacy_label=""):
-    """Runs the full tier chain for one click action. Returns True/False."""
+def click_target(session, text, image_name=None, legacy_fallback=None, legacy_label="",
+                  calibration_action=None):
+    """Runs the full tier chain for one click action. Returns True/False.
+
+    calibration_action: key to look up in this machine's recorded click
+    calibration (see calibration.py), e.g. 'select_video', 'caption', 'post'.
+    If this machine has a recorded point for it, that's tried before falling
+    all the way back to the blind random-box guess.
+    """
     # With CDP, "reachable" just means we have a live session — there's no
     # separate server to ping like the old HTTP bridge had.
     bridge_up = session is not None
@@ -159,6 +175,16 @@ def click_target(session, text, image_name=None, legacy_fallback=None, legacy_la
             _log(f"clicked via multiscale image match: {image_name}")
             return True
 
+    # Tier 1.5: this machine's own recorded calibration point, if any —
+    # more reliable than a blind box guess because it's the real spot on
+    # this real screen, captured by a human once.
+    if calibration_action:
+        point = calibration.get_point("tiktok", calibration_action)
+        if point:
+            pyautogui.click(point)
+            _log(f"clicked via saved calibration point for '{calibration_action}': {point}")
+            return True
+
     # Tier 2: verified tab navigation (also needs the bridge)
     if bridge_up and verified_tab_to(session, text):
         bridge.press_key(session, "Enter")
@@ -167,7 +193,9 @@ def click_target(session, text, image_name=None, legacy_fallback=None, legacy_la
     # Tier 3: legacy coordinate fallback
     if legacy_fallback:
         _log(f"falling back to legacy coordinates for '{legacy_label or text}' — "
-             f"this is the fragile path, expect it to be wrong on non-dev machines")
+             f"this is the fragile path, expect it to be wrong on non-dev machines. "
+             f"Run 'python calibration.py tiktok {calibration_action or text}' once on this "
+             f"machine to fix this permanently.")
         legacy_fallback()
         return True
 
@@ -211,9 +239,30 @@ def _click_first_caption_fallback():
 
 
 def write_caption(session, caption):
-    # Tier 0a: DraftJS caption editor has no stable visible text (it's
-    # placeholder copy that changes), so target it structurally by class
-    # instead. TikTok's caption box is a public-DraftEditor-content div.
+    # Primary approach: once the upload page loads, a single Tab press
+    # lands focus directly on the caption box — confirmed reliable, no
+    # click, no image, no calibration needed. Real OS-level keypress via
+    # PAG, same trust category as physical keyboard input.
+    _log("Tab to reach caption box...")
+    pyautogui.press('tab')
+    time.sleep(0.3)
+
+    pyautogui.hotkey('ctrl', 'a')
+    pyautogui.press('backspace')
+    pyautogui.write(caption, interval=0.05)
+    time.sleep(2.0)
+    _log("Caption entered.")
+    return True
+
+
+def write_caption_legacy_click_based(session, caption):
+    """
+    Kept as a manual fallback, not part of the default flow anymore — the
+    Tab-based approach above is simpler and doesn't depend on image/
+    calibration data existing at all. If Tab-to-caption is ever found
+    unreliable (e.g. TikTok changes tab order), this is what to swap back
+    to in write_caption() above.
+    """
     ok = False
     if session is not None:
         ok = bridge.click_selector(
@@ -226,10 +275,11 @@ def write_caption(session, caption):
     if not ok:
         ok = click_target(
             session,
-            text="caption",  # unlikely to match on TikTok's current DOM, kept as a cheap extra attempt
+            text="caption",
             image_name="caption_box.png",
             legacy_fallback=_click_first_caption_fallback,
             legacy_label="caption box",
+            calibration_action="caption",
         )
 
     if not ok:
@@ -243,6 +293,39 @@ def write_caption(session, caption):
     time.sleep(2.0)
     _log("Caption entered.")
     return True
+
+def select_file_only(video_path, paste_path_and_confirm):
+    """
+    Electron already opened TikTok and clicked the file input.
+
+    The Electron/Chromium native Windows file picker is now active.
+    Do NOT open Chrome.
+    Do NOT navigate to TikTok.
+    Do NOT click TikTok coordinates.
+
+    Only type the video path into the currently active native file dialog
+    and press Enter/Open.
+    """
+
+    if not video_path:
+        raise ValueError("No video path provided")
+
+    video_path = os.path.abspath(video_path)
+
+    if not os.path.isfile(video_path):
+        raise FileNotFoundError(f"Video file does not exist: {video_path}")
+
+    print(f"TIKTOK ELECTRON: selecting file in active Electron dialog")
+    print(f"TIKTOK ELECTRON: {video_path}", flush=True)
+
+    # Give Electron's native Windows file picker a moment to become active.
+    time.sleep(0.8)
+
+    # This MUST only interact with the currently active Windows file picker.
+    # It does not launch Chrome.
+    paste_path_and_confirm(video_path)
+
+    print("TIKTOK ELECTRON: file path submitted", flush=True)
 
 
 # -------------------
@@ -268,6 +351,7 @@ def upload(caption, video_file, paste_path_func=None, session=None):
         image_name="select_file.png",
         legacy_fallback=lambda: click_random_in_box(*SELECT_VIDEO_BOX),
         legacy_label="select video box",
+        calibration_action="select_video",
     )
     if not found:
         _log("Could not reach 'Select video' through any tier — aborting.")
@@ -283,6 +367,15 @@ def upload(caption, video_file, paste_path_func=None, session=None):
     time.sleep(3)
     _log("Writing caption...")
     write_caption(session, caption)
+
+    # Post is handled entirely by the Chrome extension now (tiktok.js,
+    # triggered by background.js ~24s after page load). It watches the
+    # live DOM for the caption to stabilize and for TikTok's own JS to
+    # enable the Post button, then clicks it — including retrying past
+    # error dialogs and the content-check modal. Nothing for Python to do
+    # here anymore. Requires the extension to be loaded in this Chrome
+    # profile (chrome://extensions -> Developer mode -> Load unpacked) —
+    # one-time setup per machine, same as calibration.
 
     write_tiktok_ready_signal(caption, video_file)
     _log("TikTok post completed successfully!")

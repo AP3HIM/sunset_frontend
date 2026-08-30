@@ -6,34 +6,78 @@ import PlatformSelector from "../components/PlatformSelector";
 import Terminal from "../components/Terminal";
 import UploadButton from "../components/UploadButton";
 import SagePanel from "../components/SagePanel";
-import CalibrationWizard from "../components/CalibrationWizard";
+import CalibrationWizard from "../components/Calibrationwizard";
 import { motion } from "framer-motion";
 import { Download, Settings2 } from "lucide-react";
 import "../css/Upload.css";
 import "../css/hero.css"; // for popup styling
 
-// TikTok calibration steps. Post is DOM's job now, not calibration — only
-// the two things auto-detect can't guarantee live here. `prep` lines are
-// shown before the hold starts, so the user has real time to get in
-// position before anything begins.
+// All platforms' calibration steps live here. TikTok and Instagram are
+// real (matched to the actual DOM/PAG code). YouTube and Twitter are
+// placeholders until we've been through their upload scripts the same way
+// — swap these out once we have, don't calibrate against guessed labels.
 const CALIBRATION_STEPS = {
   tiktok: [
     {
       action: "select_video",
-      label: "Select Video button",
+      label: "Select Video button (usually not needed — image match handles this on most screens)",
       prep: [
-        "Open Chrome and go to tiktok.com/upload (about 15 seconds — take your time).",
-        "Hover your mouse directly over the \"Select video\" button. Don't click it.",
-        "When your mouse is sitting still on the button, come back here and hit the button below.",
+        "Go to tiktok.com/upload in Chrome.",
+        "Hover over the \"Select video\" button — don't click it.",
+        "Once you're sitting on it, hit Ready below and press F9 while still hovering.",
       ],
     },
+  ],
+  
+  instagram: [
     {
-      action: "caption",
-      label: "Caption box",
+      action: "select_file",
+      label: "Select File button (the one PAG/calibration step Instagram actually needs)",
       prep: [
-        "Back in Chrome, pick any video to select it (about 10 seconds).",
-        "Hover your mouse over the MIDDLE of the caption text box.",
-        "When you're steady there, come back here and hit the button below.",
+        "Get to Instagram's upload flow until 'Select from computer' is on screen.",
+        "Hover directly over that button — don't click it.",
+        "Once you're sitting on it, hit Ready below and press F9 while still hovering.",
+      ],
+    },
+  ],
+
+  // Backup only — DOM handles all of these now. Only worth touching if
+  // Instagram changes its layout and DOM automation breaks.
+  instagram_advanced: [
+    { action: "create", label: "Create button", prep: [
+      "Go to instagram.com.", "Hover over the '+' / Create icon in the sidebar — don't click it.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "post", label: "Post option (after Create)", prep: [
+      "Click Create for real so the menu opens.", "Hover over the 'Post' option.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "crop_button", label: "Crop button", prep: [
+      "Get to the crop screen after picking a video.", "Hover over the crop-select icon.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "nine_sixteen", label: "9:16 crop option", prep: [
+      "From the crop menu, hover over the 9:16 option.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "next1", label: "First Next button", prep: [
+      "Get to the first Next after cropping.", "Hover over it.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "next2", label: "Second Next button", prep: [
+      "Click through to the filters/second Next screen.", "Hover over it.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "caption", label: "Caption box", prep: [
+      "Get to the caption/share screen.", "Hover over the caption box.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+    { action: "share", label: "Share button", prep: [
+      "Get to the final screen.", "Hover over Share — don't click it.",
+      "Hit Ready below, then press F9 while still hovering." ] },
+  ],
+
+  youtube: [
+    {
+      action: "create",
+      label: "Create button (usually not needed — image match handles this on most screens)",
+      prep: [
+        "Go to studio.youtube.com in Chrome.",
+        "Hover over the Create button, top-right of the page — don't click it.",
+        "Once you're sitting on it, hit Ready below and press F9 while still hovering.",
       ],
     },
   ],
@@ -50,7 +94,6 @@ const Upload = () => {
   const [logs, setLogs] = useState([]);
 
   const [showCalibration, setShowCalibration] = useState(false);
-  const [calibrationPlatform, setCalibrationPlatform] = useState("tiktok");
 
   useEffect(() => {
     // Detect Electron (basic method)
@@ -179,8 +222,7 @@ const Upload = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setShowCalibration(false); }}
         >
           <CalibrationWizard
-            platform={calibrationPlatform}
-            steps={CALIBRATION_STEPS[calibrationPlatform]}
+            platforms={CALIBRATION_STEPS}
             onComplete={() => setShowCalibration(false)}
           />
         </div>

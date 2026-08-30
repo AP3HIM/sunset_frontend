@@ -1,60 +1,69 @@
 // CalibrationWizard.jsx
 //
-// Flow:
-//   'intro'     — explains auto-detect vs calibration (both matter — auto-
-//                 detect tries first, calibration is the guaranteed backup
-//                 you set up once). Single "Start calibration" CTA.
-//   'stepIntro' — per-step written instructions, nothing starts until the
-//                 user clicks "I'm ready" — no surprise timers.
-//   'holding'   — the actual hover-and-hold capture (3s).
-//   'confirmed' — per-step success screen. User clicks "Next step"
-//                 themselves — never auto-advances.
-//   'allDone'   — finished.
+// Flow: 'platformPicker' -> 'stepPicker' (shows every step for that
+// platform, marks which are already calibrated) -> pick ANY one step ->
+// 'stepIntro' -> 'armed' (waiting for F9) -> 'confirmed' -> back to
+// 'stepPicker', not auto-advancing — you choose what to do next, including
+// just closing out after fixing the one thing that was missing.
 //
-// Usage same as before:
-//   <CalibrationWizard platform="tiktok" steps={[...]} onComplete={...} />
+// Usage unchanged:
+//   <CalibrationWizard platforms={{ tiktok: [...], instagram: [...] }} onComplete={...} />
 
 import { useState, useEffect, useCallback } from "react";
 
-const HOLD_MS = 3000;
+const PLATFORM_LABELS = {
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  youtube: "YouTube",
+  twitter: "X / Twitter",
+};
 
-export default function CalibrationWizard({ platform, steps, onComplete }) {
-  const [mode, setMode] = useState("intro");
-  const [stepIndex, setStepIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const currentStep = steps[stepIndex];
+export default function CalibrationWizard({ platforms, onComplete }) {
+  const [mode, setMode] = useState("platformPicker");
+  const [platform, setPlatform] = useState(null);
+  const [activeStep, setActiveStep] = useState(null);
+  const [calibratedActions, setCalibratedActions] = useState(new Set());
+  const [error, setError] = useState(null);
 
-  const handleProgress = useCallback((data) => {
-    setProgress(data.reset ? 0 : Math.min(1, data.elapsed / data.holdMs));
+  const steps = platform ? platforms[platform] : [];
+
+  const handleCaptured = useCallback((data) => {
+    setCalibratedActions((prev) => new Set(prev).add(data.action));
+    setMode("confirmed");
   }, []);
 
-  const handleCaptured = useCallback(() => {
-    setProgress(0);
-    setMode("confirmed");
+  const handleError = useCallback((data) => {
+    setError(data.message);
+    setMode("stepIntro");
   }, []);
 
   useEffect(() => {
     if (!window.electronAPI) return;
-    window.electronAPI.onCalibrationProgress(handleProgress);
     window.electronAPI.onCalibrationCaptured(handleCaptured);
-  }, [handleProgress, handleCaptured]);
-
-  const beginHold = () => {
-    setMode("holding");
-    window.electronAPI?.startCalibrationCapture?.(platform, currentStep.action, { holdMs: HOLD_MS });
-  };
+    window.electronAPI.onCalibrationError(handleError);
+  }, [handleCaptured, handleError]);
 
   useEffect(() => {
     return () => window.electronAPI?.cancelCalibrationCapture?.();
   }, []);
 
-  const goToNextStep = () => {
-    if (stepIndex + 1 < steps.length) {
-      setStepIndex((i) => i + 1);
-      setMode("stepIntro");
-    } else {
-      setMode("allDone");
-    }
+  const choosePlatform = async (key) => {
+    setPlatform(key);
+    const all = (await window.electronAPI?.loadCalibration?.()) || {};
+    setCalibratedActions(new Set(Object.keys(all[key] || {})));
+    setMode("stepPicker");
+  };
+
+  const chooseStep = (step) => {
+    setActiveStep(step);
+    setError(null);
+    setMode("stepIntro");
+  };
+
+  const arm = () => {
+    setError(null);
+    setMode("armed");
+    window.electronAPI?.startCalibrationCapture?.(platform, activeStep.action);
   };
 
   return (
@@ -63,26 +72,29 @@ export default function CalibrationWizard({ platform, steps, onComplete }) {
         <CloseIcon />
       </button>
 
-      {mode === "intro" && <IntroScreen onStart={() => setMode("stepIntro")} />}
+      {mode === "platformPicker" && (
+        <PlatformPickerScreen platforms={platforms} onChoose={choosePlatform} />
+      )}
 
-      {mode === "stepIntro" && currentStep && (
-        <StepIntroScreen
-          index={stepIndex}
-          total={steps.length}
-          step={currentStep}
-          onReady={beginHold}
+      {mode === "stepPicker" && platform && (
+        <StepPickerScreen
+          platform={platform}
+          steps={steps}
+          calibratedActions={calibratedActions}
+          onChooseStep={chooseStep}
+          onBack={() => setMode("platformPicker")}
         />
       )}
 
-      {mode === "holding" && currentStep && (
-        <HoldingScreen step={currentStep} progress={progress} />
+      {mode === "stepIntro" && activeStep && (
+        <StepIntroScreen step={activeStep} error={error} onReady={arm} />
       )}
 
-      {mode === "confirmed" && currentStep && (
-        <ConfirmedScreen step={currentStep} onNext={goToNextStep} isLast={stepIndex + 1 >= steps.length} />
-      )}
+      {mode === "armed" && activeStep && <ArmedScreen step={activeStep} />}
 
-      {mode === "allDone" && <AllDoneScreen platform={platform} onFinish={onComplete} />}
+      {mode === "confirmed" && activeStep && (
+        <ConfirmedScreen step={activeStep} onBackToList={() => setMode("stepPicker")} />
+      )}
     </div>
   );
 }
@@ -91,46 +103,57 @@ export default function CalibrationWizard({ platform, steps, onComplete }) {
 // Screens
 // ---------------------------------------------------------------------------
 
-function IntroScreen({ onStart }) {
+function PlatformPickerScreen({ platforms, onChoose }) {
+  const keys = Object.keys(platforms).filter((k) => platforms[k]?.length);
   return (
     <>
-      <h2 style={styles.title}>Two ways SunsetUploader finds the right spot</h2>
-      <div style={styles.infoRow}>
-        <div style={styles.infoCard}>
-          <BoltIcon />
-          <div style={styles.infoTitle}>Auto-detect</div>
-          <div style={styles.infoDesc}>
-            Every time you upload, we try to find the button ourselves first —
-            no setup, no waiting.
-          </div>
-        </div>
-        <div style={styles.infoCard}>
-          <TargetIcon />
-          <div style={styles.infoTitle}>Your calibration</div>
-          <div style={styles.infoDesc}>
-            The guaranteed backup, built by you, for your exact screen. When
-            auto-detect can't be 100% sure, this is what makes the click land
-            anyway — every time.
-          </div>
-        </div>
+      <h2 style={styles.title}>Which platform?</h2>
+      <p style={styles.subtitle}>Pick one — you'll see exactly what's calibrated and what isn't.</p>
+      <div style={styles.platformGrid}>
+        {keys.map((key) => (
+          <button key={key} style={styles.platformBtn} onClick={() => onChoose(key)}>
+            <PlatformBadge label={PLATFORM_LABELS[key] || key} />
+            <div style={{ fontWeight: 700, fontSize: 14 }}>{PLATFORM_LABELS[key] || key}</div>
+            <div style={{ fontSize: 11.5, opacity: 0.6 }}>{platforms[key].length} steps</div>
+          </button>
+        ))}
       </div>
-      <p style={styles.introNote}>
-        Auto-detect does the heavy lifting where it can. But nobody knows
-        your screen like you do — two minutes now means this app is
-        <em> permanently </em> tuned to your setup. That's not a fallback,
-        that's you making the call instead of leaving it to a guess.
+    </>
+  );
+}
+
+function StepPickerScreen({ platform, steps, calibratedActions, onChooseStep, onBack }) {
+  const doneCount = steps.filter((s) => calibratedActions.has(s.action)).length;
+  return (
+    <>
+      <h2 style={styles.title}>{PLATFORM_LABELS[platform] || platform}</h2>
+      <p style={styles.subtitle}>
+        {doneCount} of {steps.length} done. Click any step to (re)calibrate just that one.
       </p>
-      <button style={styles.primaryBtnBig} onClick={onStart}>
-        Start calibration
+      <div style={styles.stepList}>
+        {steps.map((step) => {
+          const done = calibratedActions.has(step.action);
+          return (
+            <button key={step.action} style={styles.stepListItem} onClick={() => onChooseStep(step)}>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {done ? <SmallCheckIcon /> : <span style={styles.notDoneDot} />}
+                {step.label}
+              </span>
+              <span style={{ fontSize: 12, opacity: 0.5 }}>{done ? "Redo" : "Set up"}</span>
+            </button>
+          );
+        })}
+      </div>
+      <button style={styles.secondaryBtn} onClick={onBack}>
+        Back to platforms
       </button>
     </>
   );
 }
 
-function StepIntroScreen({ index, total, step, onReady }) {
+function StepIntroScreen({ step, error, onReady }) {
   return (
     <>
-      <div style={styles.stepCounter}>Step {index + 1} of {total}</div>
       <h2 style={styles.title}>{step.label}</h2>
       <div style={styles.instructionList}>
         {step.prep.map((line, i) => (
@@ -140,83 +163,42 @@ function StepIntroScreen({ index, total, step, onReady }) {
           </div>
         ))}
       </div>
-      <p style={styles.holdHint}>
-        Take your time on all of that — nothing starts until you click below.
-      </p>
+      {error && <p style={styles.errorText}>{error}</p>}
       <button style={styles.primaryBtnBig} onClick={onReady}>
-        I'm ready, start the hold
+        Ready — arm it
       </button>
     </>
   );
 }
 
-function HoldingScreen({ step, progress }) {
+function ArmedScreen({ step }) {
   return (
     <>
-      <h2 style={styles.title}>Hold steady...</h2>
+      <KeyIcon />
+      <h2 style={styles.title}>Go find it in Chrome</h2>
       <p style={styles.subtitle}>
-        Keep your mouse right where it is over <strong>{step.label}</strong>.
+        Hover your mouse over <strong>{step.label}</strong>, then press{" "}
+        <kbd style={styles.kbd}>F9</kbd>.
       </p>
-      <ProgressRing progress={progress} />
-      <p style={styles.holdHint}>Don't click anything — just hold still.</p>
+      <p style={styles.holdHint}>
+        F9 works no matter what's on screen — you don't need to switch back here first.
+      </p>
     </>
   );
 }
 
-function ConfirmedScreen({ step, onNext, isLast }) {
+function ConfirmedScreen({ step, onBackToList }) {
   return (
     <>
       <CheckCircleIcon />
-      <h2 style={styles.title}>{step.label} — locked in</h2>
+      <h2 style={styles.title}>Got it</h2>
       <p style={styles.subtitle}>
-        That exact spot is saved to this machine. It'll be right every time
-        from now on.
+        {step.label} is saved for this machine. That's it — it'll click that exact spot from now on.
       </p>
-      <button style={styles.primaryBtnBig} onClick={onNext}>
-        {isLast ? "Finish up" : "Next step"}
+      <button style={styles.primaryBtnBig} onClick={onBackToList}>
+        Back to the list
       </button>
     </>
-  );
-}
-
-function AllDoneScreen({ platform, onFinish }) {
-  return (
-    <>
-      <SparkleIcon />
-      <h2 style={styles.title}>{platform} is dialed in</h2>
-      <p style={styles.subtitle}>
-        This machine now knows exactly where everything is. You won't need
-        to do this again unless {platform} changes its layout.
-      </p>
-      <button style={styles.primaryBtnBig} onClick={onFinish}>
-        Done
-      </button>
-    </>
-  );
-}
-
-function ProgressRing({ progress }) {
-  const r = 46;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - progress);
-  return (
-    <svg width="120" height="120" viewBox="0 0 100 100" style={{ margin: "16px auto", display: "block" }}>
-      <circle cx="50" cy="50" r={r} fill="none" stroke="#3a2a4d" strokeWidth="7" />
-      <circle
-        cx="50" cy="50" r={r} fill="none"
-        stroke="url(#sunsetGradient)" strokeWidth="7"
-        strokeDasharray={c} strokeDashoffset={offset}
-        strokeLinecap="round"
-        transform="rotate(-90 50 50)"
-        style={{ transition: "stroke-dashoffset 0.1s linear" }}
-      />
-      <defs>
-        <linearGradient id="sunsetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ff7e5f" />
-          <stop offset="100%" stopColor="#feb47b" />
-        </linearGradient>
-      </defs>
-    </svg>
   );
 }
 
@@ -224,20 +206,23 @@ function ProgressRing({ progress }) {
 // SVG icons — no emoji, simple line-art, inherits currentColor
 // ---------------------------------------------------------------------------
 
-function TargetIcon() {
+function PlatformBadge({ label }) {
+  const initial = label.trim()[0]?.toUpperCase() || "?";
   return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" style={styles.icon}>
-      <circle cx="12" cy="12" r="9" stroke="#feb47b" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="5" stroke="#feb47b" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="1.4" fill="#feb47b" />
+    <svg width="36" height="36" viewBox="0 0 36 36" style={{ margin: "0 auto 6px", display: "block" }}>
+      <circle cx="18" cy="18" r="17" fill="none" stroke="#feb47b" strokeWidth="1.6" />
+      <text x="18" y="23" textAnchor="middle" fontSize="14" fontWeight="700" fill="#feb47b" fontFamily="inherit">
+        {initial}
+      </text>
     </svg>
   );
 }
 
-function BoltIcon() {
+function KeyIcon() {
   return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" style={styles.icon}>
-      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="#feb47b" strokeWidth="1.6" strokeLinejoin="round" />
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 10px", display: "block" }}>
+      <circle cx="8" cy="15" r="4.2" stroke="#feb47b" strokeWidth="1.6" />
+      <path d="M11 12 19 4M16 6l2.5 2.5M13.5 8.5 16 11" stroke="#feb47b" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -251,10 +236,11 @@ function CheckCircleIcon() {
   );
 }
 
-function SparkleIcon() {
+function SmallCheckIcon() {
   return (
-    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 8px", display: "block" }}>
-      <path d="M12 2 14 9 21 12 14 15 12 22 10 15 3 12 10 9Z" stroke="#feb47b" strokeWidth="1.4" strokeLinejoin="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="10" fill="#feb47b" />
+      <path d="m7.5 12.5 3 3 6-6.5" stroke="#1a1425" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -279,26 +265,43 @@ const styles = {
     textAlign: "center",
     boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
     border: "1px solid rgba(255,255,255,0.06)",
+    maxHeight: "85vh",
+    overflowY: "auto",
   },
   closeBtn: {
     position: "absolute", top: 16, right: 16,
     background: "transparent", border: "none", color: "#aaa", cursor: "pointer",
     padding: 6, borderRadius: 8,
   },
-  icon: { margin: "0 auto 6px", display: "block" },
   title: { fontSize: 21, fontWeight: 700, margin: "6px 0 14px" },
   subtitle: { fontSize: 14, opacity: 0.8, lineHeight: 1.6, marginBottom: 12 },
   holdHint: { fontSize: 13, opacity: 0.6, marginTop: 10 },
-  stepCounter: { fontSize: 12, opacity: 0.5, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 4 },
+  errorText: { fontSize: 13, color: "#ff8a8a", marginTop: 8, marginBottom: 4 },
 
-  infoRow: { display: "flex", gap: 14, marginTop: 8, marginBottom: 16 },
-  infoCard: {
-    flex: 1, padding: "18px 14px", borderRadius: 14,
-    border: "1px solid #3a2a4d", background: "rgba(255,255,255,0.03)",
+  kbd: {
+    background: "#3a2a4d", padding: "2px 8px", borderRadius: 6,
+    fontFamily: "monospace", fontSize: 13, border: "1px solid rgba(255,255,255,0.15)",
   },
-  infoTitle: { fontWeight: 700, fontSize: 14, margin: "6px 0 6px" },
-  infoDesc: { fontSize: 12.5, opacity: 0.7, lineHeight: 1.5 },
-  introNote: { fontSize: 13, opacity: 0.75, lineHeight: 1.6, marginBottom: 20 },
+
+  platformGrid: {
+    display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20,
+  },
+  platformBtn: {
+    padding: "20px 12px", borderRadius: 14, border: "1px solid #3a2a4d",
+    background: "rgba(255,255,255,0.03)", color: "#fff", cursor: "pointer",
+    textAlign: "center",
+  },
+
+  stepList: { display: "flex", flexDirection: "column", gap: 8, margin: "16px 0", textAlign: "left" },
+  stepListItem: {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "12px 14px", borderRadius: 12, border: "1px solid #3a2a4d",
+    background: "rgba(255,255,255,0.03)", color: "#fff", cursor: "pointer",
+    fontSize: 14,
+  },
+  notDoneDot: {
+    width: 16, height: 16, borderRadius: "50%", border: "2px solid #55486b", flexShrink: 0,
+  },
 
   instructionList: { textAlign: "left", margin: "16px 0" },
   instructionRow: { display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 },
@@ -313,6 +316,12 @@ const styles = {
     marginTop: 8, padding: "14px 30px", borderRadius: 999, border: "none",
     background: "linear-gradient(90deg, #ff7e5f, #feb47b)", color: "#1a1425",
     fontWeight: 800, cursor: "pointer", fontSize: 15,
+    width: "100%",
+  },
+  secondaryBtn: {
+    marginTop: 10, padding: "12px 30px", borderRadius: 999,
+    border: "1px solid #3a2a4d", background: "transparent", color: "#fff",
+    fontWeight: 600, cursor: "pointer", fontSize: 14,
     width: "100%",
   },
 };

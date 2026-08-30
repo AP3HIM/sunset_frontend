@@ -1,5 +1,5 @@
 // electron.cjs (main process)
-const { app, BrowserWindow, ipcMain, shell, dialog, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, screen, globalShortcut } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 const os = require("os");
@@ -8,6 +8,7 @@ const fs = require("fs");
 let currentPythonProcess = null;
 let filePathStore = {};
 const PLATFORM_PARTITION = "persist:platforms";
+const CALIBRATION_HOTKEY = "F9";
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -32,24 +33,10 @@ function createWindow() {
   });
 }
 
-function openPlatformWindow(url) {
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 900,
-    show: false,
-    webPreferences: {
-      partition: PLATFORM_PARTITION,
-      nodeIntegration: false,
-      contextIsolation: false,
-    },
-  });
 
-  win.loadURL(url);
-  win.once("ready-to-show", () => {
-    win.maximize();
-    win.show();
-  });
-  return win;
+function openPlatformWindow(url) {
+  shell.openExternal(url);
+  return null;
 }
 
 app.whenReady().then(() => {
@@ -79,54 +66,31 @@ app.whenReady().then(() => {
     return data;
   }
 
-  let calibrationPollInterval = null;
+  // Hotkey-based capture: user hovers the real target in Chrome (fully
+  // visible, no window switching needed) and taps a global hotkey. This
+  // works no matter which window has focus, and there's no hidden timer to
+  // lose track of — the keypress IS the confirmation.
+  function startCalibrationCapture(event, { platform, action, hotkey = CALIBRATION_HOTKEY }) {
+    stopCalibrationCapture(); // clear any previous registration first
 
-  function startCalibrationCapture(event, { platform, action, holdMs = 2500, tolerancePx = 12 }) {
-    stopCalibrationCapture();
-
-    let refPoint = null;
-    let stableStart = null;
-
-    calibrationPollInterval = setInterval(() => {
+    const registered = globalShortcut.register(hotkey, () => {
       const pt = screen.getCursorScreenPoint();
+      stopCalibrationCapture();
+      const data = saveCalibrationPoint(platform, action, pt.x, pt.y);
+      event.sender.send("calibration-captured", { platform, action, x: pt.x, y: pt.y, data });
+    });
 
-      if (!refPoint) {
-        refPoint = pt;
-        stableStart = Date.now();
-        return;
-      }
-
-      const dx = Math.abs(pt.x - refPoint.x);
-      const dy = Math.abs(pt.y - refPoint.y);
-
-      if (dx > tolerancePx || dy > tolerancePx) {
-        refPoint = pt;
-        stableStart = Date.now();
-        event.sender.send("calibration-progress", { elapsed: 0, holdMs, reset: true });
-        return;
-      }
-
-      const elapsed = Date.now() - stableStart;
-      event.sender.send("calibration-progress", { elapsed, holdMs, reset: false });
-
-      if (elapsed >= holdMs) {
-        stopCalibrationCapture();
-        const data = saveCalibrationPoint(platform, action, pt.x, pt.y);
-        event.sender.send("calibration-captured", { platform, action, x: pt.x, y: pt.y, data });
-      }
-    }, 100);
-  }
-
-  function stopCalibrationCapture() {
-    if (calibrationPollInterval) {
-      clearInterval(calibrationPollInterval);
-      calibrationPollInterval = null;
+    if (!registered) {
+      event.sender.send("calibration-error", {
+        message: `Couldn't set up the ${hotkey} shortcut — something else on your system might already be using it.`,
+      });
     }
   }
 
-  // These three registrations were missing from what you pasted — the
-  // capture/save functions existed but nothing connected them to IPC, so
-  // the renderer had no channel to actually call.
+  function stopCalibrationCapture() {
+    globalShortcut.unregisterAll();
+  }
+
   ipcMain.on("start-calibration-capture", startCalibrationCapture);
   ipcMain.on("cancel-calibration-capture", stopCalibrationCapture);
   ipcMain.handle("load-calibration", () => loadCalibration());
@@ -260,6 +224,12 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromId(windowId);
     if (win && !win.isDestroyed()) win.close();
   });
+});
+
+// Always release the global hotkey when the app quits — an unreleased
+// global shortcut can interfere with other apps on the system.
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on("window-all-closed", () => {

@@ -24,15 +24,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openPlatformWindow: (platform, url) =>
     ipcRenderer.invoke("open-platform-window", { platform, url }),
 
-  // ── Calibration ──────────────────────────────────────────────────────────
+  // ── Calibration (hotkey-based) ──────────────────────────────────────────
   startCalibrationCapture: (platform, action, opts) =>
     ipcRenderer.send("start-calibration-capture", { platform, action, ...opts }),
   cancelCalibrationCapture: () =>
     ipcRenderer.send("cancel-calibration-capture"),
-  onCalibrationProgress: (callback) =>
-    ipcRenderer.on("calibration-progress", (_, data) => callback(data)),
   onCalibrationCaptured: (callback) =>
     ipcRenderer.on("calibration-captured", (_, data) => callback(data)),
+  onCalibrationError: (callback) =>
+    ipcRenderer.on("calibration-error", (_, data) => callback(data)),
   loadCalibration: () => ipcRenderer.invoke("load-calibration"),
 });
 
