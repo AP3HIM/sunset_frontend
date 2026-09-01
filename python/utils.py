@@ -157,6 +157,58 @@ def launch_chrome_cdp(initial_url="about:blank", port=CDP_PORT, timeout=15, retr
 
     return cdp.connect(ws_url)
 
+def launch_chrome_with_extension(extension_path=None, profile_dir=None):
+    """
+    Launches Chrome with the SunsetUploader extension pre-loaded via
+    --load-extension, so real end users never touch chrome://extensions
+    manually. Falls back to the plain legacy launch if no valid extension
+    path is available (e.g. dev environment without the env var set).
+    """
+    extension_path = extension_path or os.environ.get("SUNSET_EXTENSION_PATH")
+    if not extension_path or not os.path.isdir(extension_path):
+        print(f" No valid extension path ({extension_path!r}) — falling back to plain Chrome launch.")
+        return launch_chrome()
+
+    chrome_exe = find_chrome_exe()
+    if not chrome_exe:
+        print(" Could not locate chrome.exe — falling back to plain Chrome launch.")
+        return launch_chrome()
+
+    profile_dir = profile_dir or find_default_chrome_profile_dir()
+    _close_existing_chrome()
+
+    args = [
+        chrome_exe,
+        f"--load-extension={extension_path}",
+        f"--user-data-dir={profile_dir}",
+        "--no-first-run",
+        "--new-window",
+    ]
+    print(f" Launching Chrome with extension pre-loaded: {' '.join(args)}")
+
+    try:
+        subprocess.Popen(args)
+        print(" Launched Chrome with SunsetUploader extension loaded automatically.")
+        time.sleep(3)
+    except Exception as e:
+        print(" Chrome launch with extension failed:", e)
+        return launch_chrome()
+
+    chrome_window = None
+    for _ in range(10):
+        windows = gw.getWindowsWithTitle("Chrome")
+        if windows:
+            chrome_window = windows[0]
+            break
+        time.sleep(1)
+
+    if chrome_window:
+        try:
+            chrome_window.activate()
+            chrome_window.maximize()
+            print(" Activated and maximized Chrome window")
+        except Exception as e:
+            print(" Failed to manipulate Chrome window:", e)
 
 def _try_focus_chrome_window():
     try:

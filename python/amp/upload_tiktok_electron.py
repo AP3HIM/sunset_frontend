@@ -294,6 +294,39 @@ def write_caption_legacy_click_based(session, caption):
     _log("Caption entered.")
     return True
 
+def select_file_only(video_path, paste_path_and_confirm):
+    """
+    Electron already opened TikTok and clicked the file input.
+
+    The Electron/Chromium native Windows file picker is now active.
+    Do NOT open Chrome.
+    Do NOT navigate to TikTok.
+    Do NOT click TikTok coordinates.
+
+    Only type the video path into the currently active native file dialog
+    and press Enter/Open.
+    """
+
+    if not video_path:
+        raise ValueError("No video path provided")
+
+    video_path = os.path.abspath(video_path)
+
+    if not os.path.isfile(video_path):
+        raise FileNotFoundError(f"Video file does not exist: {video_path}")
+
+    print(f"TIKTOK ELECTRON: selecting file in active Electron dialog")
+    print(f"TIKTOK ELECTRON: {video_path}", flush=True)
+
+    # Give Electron's native Windows file picker a moment to become active.
+    time.sleep(0.8)
+
+    # This MUST only interact with the currently active Windows file picker.
+    # It does not launch Chrome.
+    paste_path_and_confirm(video_path)
+
+    print("TIKTOK ELECTRON: file path submitted", flush=True)
+
 
 # -------------------
 # Main Upload Logic

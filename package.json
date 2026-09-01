@@ -58,14 +58,10 @@
       "preload.cjs"
     ],
     "extraFiles": [
-      {
-        "from": "python",
-        "to": "resources/python"
-      },
-      {
-        "from": "amp",
-        "to": "resources/python/amp"
-      }
+      { "from": "python", "to": "resources/python" }
+    ],
+    "extraResources": [
+      { "from": "extension", "to": "extension" }
     ],
     "win": {
       "target": "nsis",

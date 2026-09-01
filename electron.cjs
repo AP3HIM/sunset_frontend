@@ -33,24 +33,10 @@ function createWindow() {
   });
 }
 
-function openPlatformWindow(url) {
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 900,
-    show: false,
-    webPreferences: {
-      partition: PLATFORM_PARTITION,
-      nodeIntegration: false,
-      contextIsolation: false,
-    },
-  });
 
-  win.loadURL(url);
-  win.once("ready-to-show", () => {
-    win.maximize();
-    win.show();
-  });
-  return win;
+function openPlatformWindow(url) {
+  shell.openExternal(url);
+  return null;
 }
 
 app.whenReady().then(() => {
@@ -150,8 +136,13 @@ app.whenReady().then(() => {
         ? path.join(__dirname, "python", "upload.py")
         : path.join(process.resourcesPath, "python", "upload.py");
 
+      const extensionPath = isDev
+        ? path.join(__dirname, "extension")
+        : path.join(process.resourcesPath, "extension");
+
       const python = spawn(pythonExecutable, [pythonScript, ...args], {
         windowsHide: true,
+        env: { ...process.env, SUNSET_EXTENSION_PATH: extensionPath },
       });
 
       currentPythonProcess = python;

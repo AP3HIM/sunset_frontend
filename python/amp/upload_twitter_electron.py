@@ -4,6 +4,7 @@ import time
 import os
 import pyperclip
 import traceback
+import signal_server
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGES_DIR = os.path.join(BASE_DIR, '../images')
@@ -166,6 +167,47 @@ def upload_twitter(caption, video_file, paste_path_func):
         print("Unexpected error in upload_twitter:")
         traceback.print_exc()
 
+def click_media_button():
+    """
+    Must be PAG — this click opens a native file dialog, which DOM
+    scripts are structurally blocked from triggering (same root cause
+    as TikTok/IG/YT's select-file buttons).
+    """
+    btn = safe_locate('twitter_media_button.png', confidence=0.7)
+    if btn:
+        pyautogui.click(btn)
+        print("  Clicked media button via image match.")
+        return True
+
+    print("  Image match failed — falling back to Tab x2 + Enter.")
+    pyautogui.press('tab')
+    time.sleep(0.15)
+    pyautogui.press('tab')
+    time.sleep(0.15)
+    pyautogui.press('enter')
+    return True
+
+def upload_twitter_hybrid(caption, video_file, paste_path_func):
+    print(" X: Waiting for compose box to be ready (DOM signal)...")
+    signal_server.wait_for("x-compose-ready", timeout=15)
+
+    print(" X: Typing caption (compose box already focused)...")
+    type_or_paste(caption)
+    time.sleep(0.3)
+
+    print(" X: Clicking media button...")
+    click_media_button()
+    time.sleep(0.6)
+
+    print(" X: Pasting file path into native dialog...")
+    paste_path_func(video_file)
+
+    print(" X: Waiting for DOM to confirm media attached + refocus...")
+    signal_server.wait_for("x-refocused", timeout=20)
+
+    print(" X: Posting with Ctrl+Enter...")
+    pyautogui.hotkey('ctrl', 'enter')
+    print(" X: Done.")
 
 # Standalone runner so you can test this file by itself:
 if __name__ == "__main__":

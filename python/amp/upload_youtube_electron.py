@@ -5,6 +5,7 @@ import os
 import random
 
 import calibration
+import signal_server
 
 try:
     import cv2
@@ -217,33 +218,12 @@ def select_file_only(video_file, paste_path_func=None):
 
 
 def write_title_pag(caption):
-    """
-    Kept as a PAG fallback for title entry, though DOM should own this now
-    per your testing (caption box auto-focuses, DOM handles the rest).
-    Leaving this in place as a safety net in case DOM's title-fill needs
-    to fall back.
-    """
-    _log("PAG: Waiting for details page to load...")
-    time.sleep(4)
+    _log("PAG: Waiting for real 'details page ready' signal from the extension...")
+    got_signal = signal_server.wait_for_ready(timeout=25)
+    if not got_signal:
+        _log("PAG: No signal received in time — proceeding anyway as a fallback.")
 
-    title_loc = None
-    ms = locate_multiscale('yt_title_box.png')
-    if ms:
-        title_loc = ms
-        _log(f"PAG: Title box found via multiscale at {ms}.")
-    else:
-        cal = calibrated_point("caption")
-        if cal:
-            title_loc = cal
-            _log(f"PAG: Title box via saved calibration point: {cal}")
-
-    if not title_loc:
-        title_loc = (725, 415)
-        _log(f"PAG: No multiscale/calibration match, using legacy coords {title_loc}...")
-
-    pyautogui.click(*title_loc)
-    time.sleep(0.8)
-
+    _log("PAG: Title box is auto-focused — typing directly, no click needed.")
     pyautogui.hotkey('ctrl', 'a')
     time.sleep(0.4)
     pyautogui.press('backspace')
@@ -253,6 +233,18 @@ def write_title_pag(caption):
     _log(f"PAG: Title written: {caption}")
     return True
 
+def handle_publish_fallback():
+    _log("PAG: Waiting to see if a 'Publish anyway' dialog needs a keyboard fallback...")
+    needed = signal_server.wait_for("publish-fallback-needed", timeout=8)
+    if needed:
+        _log("PAG: DOM couldn't confirm the dialog — sending Tab, Tab, Enter.")
+        pyautogui.press('tab')
+        time.sleep(0.2)
+        pyautogui.press('tab')
+        time.sleep(0.2)
+        pyautogui.press('enter')
+    else:
+        _log("PAG: No fallback needed — DOM handled it (or no dialog appeared).")
 
 def upload_youtube(caption, video_file, paste_path_func=None):
     """

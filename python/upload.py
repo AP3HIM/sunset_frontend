@@ -6,13 +6,13 @@ import platform
 import subprocess
 
 import sys
+import signal_server
 
-script_dir = os.path.dirname(os.path.abspath(__file__)) 
-if script_dir not in sys.path: 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
 import pyautogui
-
 
 try:
     import pyperclip
@@ -20,7 +20,7 @@ except ImportError:
     pyperclip = None
 
 from amp import upload_instagram_electron, upload_tiktok_electron, upload_twitter_electron, upload_youtube_electron
-from utils import launch_chrome, open_new_tab_and_search
+from utils import launch_chrome, launch_chrome_with_extension, open_new_tab_and_search
 
 print("Raw sys.argv:", sys.argv)
 
@@ -89,6 +89,7 @@ def write_youtube_signal(caption, video_file):
         json.dump(payload, f)
     print(f"[YT] Signal written to {signal_path}")
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--caption',     type=str, default="")
@@ -111,14 +112,13 @@ def main():
     print(f"DEBUG: caption={caption!r}, video={video!r}, platforms={platforms!r}, mode={mode!r}")
     print(f"File exists? {os.path.exists(video)}")
 
-    # ── file-select-only ─────────────────────────────────────────────────────
     if mode == "file-select-only":
         platform_arg = platforms[0] if platforms else None
         print(f"File-select-only for: {platform_arg}")
         if platform_arg == "tiktok":
             upload_tiktok_electron.select_file_only(video, paste_path_and_confirm)
         elif platform_arg == "instagram":
-            upload_instagram_electron.select_file_only(video, paste_path_and_confirm, select_crop=True)  # <-- add this
+            upload_instagram_electron.select_file_only(video, paste_path_and_confirm, select_crop=True)
         elif platform_arg == "youtube":
             upload_youtube_electron.select_file_only(video, paste_path_and_confirm)
         elif platform_arg == "twitter":
@@ -126,7 +126,6 @@ def main():
         print("File selection complete.")
         return
 
-    # ── pag-fallback ─────────────────────────────────────────────────────────
     if mode == "pag-fallback":
         platform_arg = platforms[0] if platforms else None
         print(f"PAG fallback for: {platform_arg}, dom_caption={dom_caption_ok}, dom_post={dom_post_ok}")
@@ -144,14 +143,10 @@ def main():
         elif platform_arg == "instagram":
             if not dom_caption_ok:
                 upload_instagram_electron.write_caption_pag(caption)
-            # Share handled by DOM
-
-        # YouTube has no pag-fallback needed — DOM handles everything after file select
 
         print("PAG fallback complete.")
         return
-    
-    # ── write-title ───────────────────────────────────────────────────────────────
+
     if mode == "write-title":
         print(f"Write-title mode: caption={caption!r}")
         upload_youtube_electron.write_title_pag(caption)
@@ -170,9 +165,9 @@ def main():
         print("Crop select complete.")
         return
 
-    # ── full legacy PAG ───────────────────────────────────────────────────────
-    print(f"Full PAG mode for: {platforms}")
-    launch_chrome()
+    # ── full — hybrid DOM+PAG ───────────────────────────────────────────────
+    print(f"Full mode for: {platforms}")
+    launch_chrome_with_extension()
     time.sleep(1)
 
     if 'tiktok' in platforms:
@@ -184,23 +179,26 @@ def main():
 
     if 'instagram' in platforms:
         try:
-            open_new_tab_and_search("instagram.com/", delay=1.5)
-            upload_instagram_electron.upload_instagram(caption, video, paste_path_and_confirm)
+            open_new_tab_and_search("instagram.com/?sunset_upload=1", delay=1.5)
+            upload_instagram_electron.upload_instagram_chrome_only(caption, video, paste_path_and_confirm)
         except Exception as e:
             print(f"Error during Instagram upload: {e}")
 
     if 'twitter' in platforms:
         try:
-            open_new_tab_and_search("twitter.com/compose/tweet", delay=1.5)
-            upload_twitter_electron.upload_twitter(caption, video, paste_path_and_confirm)
+            signal_server.start()
+            open_new_tab_and_search("x.com/compose/post", delay=3.0)
+            upload_twitter_electron.upload_twitter_hybrid(caption, video, paste_path_and_confirm)
         except Exception as e:
             print(f"Error during Twitter upload: {e}")
 
     if 'youtube' in platforms:
         try:
-            open_new_tab_and_search("studio.youtube.com", delay=6.0)
+            signal_server.start()
+            open_new_tab_and_search("studio.youtube.com/?sunset_upload=1", delay=6.0)
             upload_youtube_electron.select_file_only(video, paste_path_and_confirm)
             upload_youtube_electron.write_title_pag(caption)
+            upload_youtube_electron.handle_publish_fallback()
         except Exception as e:
             print(f"Error during YouTube upload: {e}")
 

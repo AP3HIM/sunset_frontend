@@ -44,18 +44,29 @@ export default function UploadButton({ video, caption, platforms, setLogs }) {
 
     if (window.electronAPI) {
       window.electronAPI.onPythonLog((line) => log(line));
+
       try {
-        const platformArgs = platforms.length > 0 ? ["--platforms", ...platforms] : [];
+        log("Starting uploader in Google Chrome...");
+
         await window.electronAPI.runPythonUploader([
-          "--caption", caption,
-          "--video", videoPath,
-          ...platformArgs,
+          "--mode",
+          "full",
+          "--video",
+          videoPath,
+          "--caption",
+          caption,
+          "--platforms",
+          ...platforms,
         ]);
+
+        log("Upload process complete.");
       } catch (err) {
+        console.error("Upload error:", err);
         log(`Error: ${err.message || err}`);
       } finally {
         setIsRunning(false);
       }
+
       return;
     }
 
@@ -102,7 +113,7 @@ export default function UploadButton({ video, caption, platforms, setLogs }) {
 //      Next x3, Public, Publish
 // PAG: file selection only
 // ─────────────────────────────────────────────────────────────────────────────
-
+/*
 async function runYouTubeHybrid(videoPath, caption, log) {
   console.log("YT CAPTION RECEIVED:", caption);
 
@@ -202,7 +213,7 @@ async function runYouTubeHybrid(videoPath, caption, log) {
   log("PAG: Title written.");
   await new Promise(r => setTimeout(r, 500));
   */
-
+  /*
   // ── DOM: Click Next x3 ───────────────────────────────────────────────────
   for (let i = 1; i <= 3; i++) {
     log(`DOM: Clicking Next (${i}/3)...`);
@@ -423,3 +434,4 @@ async function runPAGCaptionAndPost(videoPath, caption, domCaptionOk, domPostOk,
 async function runLegacyPAG(platforms, videoPath, caption, log) {
   await window.electronAPI.runPythonUploader(["--caption", caption, "--video", videoPath, "--platforms", ...platforms]);
 }
+*/
