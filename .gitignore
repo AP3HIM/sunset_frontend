@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+python/*.exe
+python/*.dll
+python/*.pyd
+python/*.zip
+python/Lib/
+python/Scripts/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +29,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+click_calibration.json
+python/*.exe
+node_modules/
+dist/
+build/win-unpacked/
