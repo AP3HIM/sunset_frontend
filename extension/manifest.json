@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "SunsetUploader DOM Controller",
+  "description": "Automates uploads using real browser DOM interactions",
+  "version": "0.1.0",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.tiktok.com/*",
+    "https://www.youtube.com/*",
+    "https://studio.youtube.com/*",
+    "https://www.instagram.com/*",
+    "https://x.com/*",
+    "http://127.0.0.1:8765/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "SunsetUploader"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://studio.youtube.com/*",
+        "https://www.tiktok.com/*",
+        "https://www.instagram.com/*",
+        "https://x.com/*"
+      ],
+      "js": [
+        "content/youtube.js",
+        "content/tiktok.js",
+        "content/instagram.js",
+        "content/twitter.js"
+      ]
+    }
+  ]
+}
