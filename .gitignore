@@ -34,3 +34,8 @@ python/*.exe
 node_modules/
 dist/
 build/win-unpacked/
+
+python/*.exe
+node_modules/
+dist/
+build/win-unpacked/
