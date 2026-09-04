@@ -2,6 +2,7 @@ console.log("SunsetUploader background.js LOADED");
 
 const startedYouTubeTabs = new Set();
 const startedXTabs = new Set();
+const startedInstagramTabs = new Set();
 
 function sendWithRetry(tabId, message, attempts = 6, delay = 1000) {
   chrome.tabs.sendMessage(tabId, message, () => {
@@ -73,14 +74,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" &&
       tab.url?.includes("instagram.com") &&
       tab.url?.includes("sunset_upload=1")) {
-    console.log("INSTAGRAM AUTOMATION TAB MATCHED:", tab.url);
-    setTimeout(() => {
-      sendWithRetry(tabId, { type: "START_IG_UPLOAD", caption: "" });
-    }, 2000);
+    if (startedInstagramTabs.has(tabId)) {
+      console.log("INSTAGRAM: already triggered for this tab, skipping.");
+    } else {
+      startedInstagramTabs.add(tabId);
+      console.log("INSTAGRAM AUTOMATION TAB MATCHED:", tab.url);
+      setTimeout(() => {
+        sendWithRetry(tabId, { type: "START_IG_UPLOAD", caption: "" });
+      }, 2000);
+    }
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   startedYouTubeTabs.delete(tabId);
   startedXTabs.delete(tabId);
+  startedInstagramTabs.delete(tabId);
 });

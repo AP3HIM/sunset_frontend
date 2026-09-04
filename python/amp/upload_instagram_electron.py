@@ -381,9 +381,9 @@ def select_file_only(video_file: str, paste_path_func, select_crop: bool = False
         # be shown with a user activation").
         _log(" Tab once + Enter to reach 'Select from computer'...")
         pyautogui.press('tab')
-        time.sleep(0.2)
+        time.sleep(0.8)
         pyautogui.press('enter')
-        time.sleep(0.3)
+        time.sleep(0.8)
         got_it = True
 
     if not got_it:

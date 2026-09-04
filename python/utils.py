@@ -157,17 +157,34 @@ def launch_chrome_cdp(initial_url="about:blank", port=CDP_PORT, timeout=15, retr
 
     return cdp.connect(ws_url)
 
+def _chrome_is_running():
+    try:
+        check = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq chrome.exe"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return "chrome.exe" in check.stdout
+    except Exception:
+        return False
+
+
 def launch_chrome_with_extension(extension_path=None, profile_dir=None):
     """
-    Launches Chrome with the SunsetUploader extension pre-loaded via
-    --load-extension, so real end users never touch chrome://extensions
-    manually. Falls back to the plain legacy launch if no valid extension
-    path is available (e.g. dev environment without the env var set).
+    Only closes/relaunches Chrome if it isn't already running.
+    --load-extension only takes effect on a genuinely fresh process, but
+    forcing a close on every automation run destroys the user's open
+    tabs — not acceptable for real users. If Chrome is already running,
+    we assume this app launched it earlier with the extension loaded and
+    reuse it as-is.
     """
     extension_path = extension_path or os.environ.get("SUNSET_EXTENSION_PATH")
     if not extension_path or not os.path.isdir(extension_path):
         print(f" No valid extension path ({extension_path!r}) — falling back to plain Chrome launch.")
         return launch_chrome()
+
+    if _chrome_is_running():
+        print(" Chrome is already running — reusing it, not closing any tabs.")
+        return
 
     chrome_exe = find_chrome_exe()
     if not chrome_exe:
@@ -175,13 +192,13 @@ def launch_chrome_with_extension(extension_path=None, profile_dir=None):
         return launch_chrome()
 
     profile_dir = profile_dir or find_default_chrome_profile_dir()
-    _close_existing_chrome()
 
     args = [
         chrome_exe,
         f"--load-extension={extension_path}",
         f"--user-data-dir={profile_dir}",
         "--no-first-run",
+        "--disable-session-crashed-bubble",
         "--new-window",
     ]
     print(f" Launching Chrome with extension pre-loaded: {' '.join(args)}")

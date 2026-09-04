@@ -1,7 +1,14 @@
 console.log("SunsetUploader: Instagram content script loaded");
 
+let sunsetIGStarted = false;
+
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type !== "START_IG_UPLOAD") return;
+  if (sunsetIGStarted) {
+    console.log("SunsetUploader: START_IG_UPLOAD received again, ignoring — already running.");
+    return;
+  }
+  sunsetIGStarted = true;
   console.log("SunsetUploader: received START_IG_UPLOAD, caption:", message.caption);
   startInstagramFlow(message.caption);
 });

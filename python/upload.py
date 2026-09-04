@@ -8,9 +8,15 @@ import subprocess
 import sys
 import signal_server
 
+
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
+
+lib_dir = os.path.join(script_dir, "Lib", "site-packages")
+if os.path.exists(lib_dir) and lib_dir not in sys.path:
+    sys.path.append(lib_dir)
 
 import pyautogui
 

@@ -7,6 +7,8 @@ const fs = require("fs");
 
 let currentPythonProcess = null;
 let filePathStore = {};
+let isPythonRunning = false; // Flag to protect the system state
+
 const PLATFORM_PARTITION = "persist:platforms";
 const CALIBRATION_HOTKEY = "F9";
 
@@ -32,7 +34,6 @@ function createWindow() {
     return { action: "deny" };
   });
 }
-
 
 function openPlatformWindow(url) {
   shell.openExternal(url);
@@ -66,13 +67,8 @@ app.whenReady().then(() => {
     return data;
   }
 
-  // Hotkey-based capture: user hovers the real target in Chrome (fully
-  // visible, no window switching needed) and taps a global hotkey. This
-  // works no matter which window has focus, and there's no hidden timer to
-  // lose track of — the keypress IS the confirmation.
   function startCalibrationCapture(event, { platform, action, hotkey = CALIBRATION_HOTKEY }) {
-    stopCalibrationCapture(); // clear any previous registration first
-
+    stopCalibrationCapture();
     const registered = globalShortcut.register(hotkey, () => {
       const pt = screen.getCursorScreenPoint();
       stopCalibrationCapture();
@@ -94,7 +90,7 @@ app.whenReady().then(() => {
   ipcMain.on("start-calibration-capture", startCalibrationCapture);
   ipcMain.on("cancel-calibration-capture", stopCalibrationCapture);
   ipcMain.handle("load-calibration", () => loadCalibration());
-
+  
   ipcMain.handle("open-file-dialog", async () => {
     const result = await dialog.showOpenDialog({
       title: "Select a video file",
@@ -104,7 +100,6 @@ app.whenReady().then(() => {
         { name: "All Files", extensions: ["*"] },
       ],
     });
-
     if (!result.canceled && result.filePaths.length > 0) {
       const filePath = result.filePaths[0];
       const fileName = path.basename(filePath);
@@ -125,20 +120,28 @@ app.whenReady().then(() => {
   ipcMain.handle("ping", () => "pong");
 
   ipcMain.handle("run-python", async (event, args) => {
+    if (isPythonRunning) {
+      console.log("Python script is already cooking! Ignoring duplicate run request.");
+      return "Process already running";
+    }
+
     return new Promise((resolve, reject) => {
+      isPythonRunning = true;
       const isDev = !app.isPackaged;
 
-      const pythonExecutable = isDev
-        ? path.join(__dirname, "python", "python.exe")
+      const pythonExecutable = isDev 
+        ? path.join(__dirname, "python", "python.exe") 
         : path.join(process.resourcesPath, "python", "python.exe");
 
-      const pythonScript = isDev
-        ? path.join(__dirname, "python", "upload.py")
+      const pythonScript = isDev 
+        ? path.join(__dirname, "python", "upload.py") 
         : path.join(process.resourcesPath, "python", "upload.py");
 
-      const extensionPath = isDev
-        ? path.join(__dirname, "extension")
+      const extensionPath = isDev 
+        ? path.join(__dirname, "extension") 
         : path.join(process.resourcesPath, "extension");
+
+      console.log("Spawning Python from:", pythonExecutable);
 
       const python = spawn(pythonExecutable, [pythonScript, ...args], {
         windowsHide: true,
@@ -151,28 +154,45 @@ app.whenReady().then(() => {
       python.stdout.on("data", (data) => {
         const chunk = data.toString();
         output += chunk;
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", chunk));
+        BrowserWindow.getAllWindows().forEach((w) => {
+          if (!w.isDestroyed()) w.webContents.send("python-log", chunk);
+        });
       });
 
       python.stderr.on("data", (data) => {
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `ERR: ${data.toString()}`));
+        const chunk = data.toString();
+        BrowserWindow.getAllWindows().forEach((w) => {
+          if (!w.isDestroyed()) w.webContents.send("python-log", `ERR: ${chunk}`);
+        });
       });
 
       python.on("close", (code) => {
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Python exited with code ${code}`));
+        BrowserWindow.getAllWindows().forEach((w) => {
+          if (!w.isDestroyed()) w.webContents.send("python-log", `Python exited with code ${code}`);
+        });
         currentPythonProcess = null;
+        isPythonRunning = false;
         if (code === 0) resolve(output);
-        else reject(output);
+        else reject(new Error(`Python process closed with non-zero exit code: ${code}`));
       });
 
       python.on("error", (err) => {
-        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send("python-log", `Spawn error: ${err.message}`));
+        BrowserWindow.getAllWindows().forEach((w) => {
+          if (!w.isDestroyed()) w.webContents.send("python-log", `Spawn error: ${err.message}`);
+        });
+        currentPythonProcess = null;
+        isPythonRunning = false;
         reject(err);
       });
     });
   });
 
   ipcMain.handle("stop-python", async () => {
+    if (isPythonRunning) {
+      console.log("Upload script is currently running. Core automation process protected from accidental UI cancellation.");
+      return "Process is running and protected.";
+    }
+
     if (currentPythonProcess) {
       try {
         if (process.platform === "win32") {
@@ -181,6 +201,7 @@ app.whenReady().then(() => {
           currentPythonProcess.kill("SIGTERM");
         }
         currentPythonProcess = null;
+        isPythonRunning = false;
         return "Stopped process";
       } catch (e) {
         return `Error stopping process: ${e.message || e}`;
@@ -199,7 +220,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle("open-platform-window", async (event, { platform, url }) => {
     const win = openPlatformWindow(url);
-    return win.id;
+    return win ? win.id : null;
   });
 
   ipcMain.handle("inject-js", async (event, { windowId, script }) => {
@@ -231,12 +252,21 @@ app.whenReady().then(() => {
   });
 });
 
-// Always release the global hotkey when the app quits — an unreleased
-// global shortcut can interfere with other apps on the system.
-app.on("will-quit", () => {
+app.on("will-quit", (event) => {
+  // CRITICAL FIX: If Python is executing the upload orchestration, do not let Electron quit
+  if (isPythonRunning) {
+    console.log("Prevented Electron exit because Python script is actively cooking.");
+    event.preventDefault();
+    return;
+  }
   globalShortcut.unregisterAll();
 });
 
 app.on("window-all-closed", () => {
+  // CRITICAL FIX: Keep the core engine process alive if Python automation scripts are executing
+  if (isPythonRunning) {
+    console.log("All windows closed but keeping background active because script is cooking.");
+    return;
+  }
   if (process.platform !== "darwin") app.quit();
 });

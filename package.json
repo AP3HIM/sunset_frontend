@@ -46,26 +46,32 @@
     "vite": "^7.0.4",
     "wait-on": "^8.0.4"
   },
-  "build": {
-    "appId": "com.sunsetuploader.app",
-    "productName": "SunsetUploader",
-    "directories": {
-      "buildResources": "build"
-    },
-    "files": [
-      "dist/**/*",
-      "electron.cjs",
-      "preload.cjs"
-    ],
-    "extraFiles": [
-      { "from": "python", "to": "resources/python" }
-    ],
-    "extraResources": [
-      { "from": "extension", "to": "extension" }
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "build/sunset-logo-resized-1024.ico"
+    "build": {
+      "appId": "com.sunsetuploader.app",
+      "productName": "SunsetUploader",
+      "directories": {
+        "buildResources": "build"
+      },
+      "files": [
+        "dist/**/*",
+        "electron.cjs",
+        "preload.cjs"
+      ],
+      "extraFiles": [
+        {
+          "from": "python",
+          "to": "python"
+        }
+      ],
+      "extraResources": [
+        {
+          "from": "extension",
+          "to": "extension"
+        }
+      ],
+      "win": {
+        "target": "nsis",
+        "icon": "build/sunset-logo-resized-1024.ico"
+      }
     }
-  }
 }
