@@ -25,6 +25,7 @@ async function startInstagramFlow(caption) {
     console.log("STEP 2: Clicking Post option...");
     await clickPostOption();
     console.log("STEP 2 DONE: Post clicked");
+    chrome.runtime.sendMessage({ type: "IG_POST_CLICKED" });
     await sleep(800);
 
     // File selection happens here via PAG in the real flow — the waits
@@ -49,6 +50,7 @@ async function startInstagramFlow(caption) {
     console.log("STEP 5: Focusing caption box (PAG types the actual text)...");
     await focusCaptionBox();
     console.log("STEP 5 DONE: caption box focused");
+    chrome.runtime.sendMessage({ type: "IG_CAPTION_READY" });
 
     // STEP 5.5 is the fix: wait for PAG's typing to actually finish
     // instead of a blind fixed delay. Same proven pattern as TikTok's

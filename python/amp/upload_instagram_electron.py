@@ -6,6 +6,8 @@ import traceback
 from typing import Optional, Tuple
 
 import calibration
+from utils import _try_focus_chrome_window
+import signal_server
 
 try:
     import cv2
@@ -348,54 +350,19 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
 
 def select_file_only(video_file: str, paste_path_func, select_crop: bool = False) -> bool:
     """
-    Called in hybrid mode. PAG handles file selection + crop. DOM handles
-    Create/Post before this and everything from crop onward through Share
-    (confirmed working end-to-end).
+    Called in hybrid mode. PAG handles file selection + crop via a single
+    trusted Tab+Enter -> native file dialog. DOM handles Create/Post before
+    this and everything from crop onward through Share.
     """
     _log("PAG: select_file_only — reaching Select File button")
-    time.sleep(0.2)
+    _try_focus_chrome_window()
+    time.sleep(0.3)
 
-    got_it = False
-
-    loc = safe_locate("insta_select_file.png", confidence=DEFAULT_CONFIDENCE,
-                       retries=DEFAULT_RETRIES, delay=DEFAULT_DELAY)
-    if loc:
-        click_point((loc.x, loc.y))
-        _log(f" Clicked image insta_select_file.png at {loc}")
-        got_it = True
-
-    if not got_it:
-        ms_loc = locate_multiscale("insta_select_file.png", confidence=max(DEFAULT_CONFIDENCE - 0.1, 0.6))
-        if ms_loc:
-            click_point(ms_loc)
-            _log(f" Clicked via multiscale match at {ms_loc}")
-            got_it = True
-
-    if not got_it:
-        # Primary approach — confirmed live: one Tab lands focus directly
-        # on 'Select from computer', Enter opens the native picker. Real
-        # OS-level key events via PAG, so Chrome treats them as trusted
-        # the same way it treats physical keyboard input — this is what
-        # actually opens the native dialog, unlike a DOM .click() on this
-        # same button (confirmed blocked: "File chooser dialog can only
-        # be shown with a user activation").
-        _log(" Tab once + Enter to reach 'Select from computer'...")
-        pyautogui.press('tab')
-        time.sleep(0.8)
-        pyautogui.press('enter')
-        time.sleep(0.8)
-        got_it = True
-
-    if not got_it:
-        cal = calibrated_point("select_file")
-        if cal:
-            click_point(cal)
-            _log(f" Clicked via saved calibration point: {cal}")
-            got_it = True
-        else:
-            click_point(FALLBACKS["select_file"])
-            _log(f" Fallback click at {FALLBACKS['select_file']}")
-            got_it = True
+    _log(" Tab once + Enter to reach 'Select from computer'...")
+    pyautogui.press('tab')
+    time.sleep(0.8)
+    pyautogui.press('enter')
+    time.sleep(0.8)
 
     time.sleep(0.2)
     _log(f"PAG: pasting file path: {video_file}")
@@ -414,33 +381,25 @@ def select_file_only(video_file: str, paste_path_func, select_crop: bool = False
             ms_crop = locate_multiscale("insta_crop_button.png", confidence=0.65)
             cal_crop = calibrated_point("crop_button")
             if ms_crop:
-                _log(f"PAG: crop button found via multiscale at {ms_crop}, clicking...")
                 pyautogui.click(ms_crop)
             elif cal_crop:
-                _log(f"PAG: crop button via saved calibration point: {cal_crop}")
                 pyautogui.click(cal_crop)
             else:
-                _log("PAG: crop button not found by any tier, using coords (631, 987)...")
                 pyautogui.click(631, 987)
         time.sleep(0.2)
 
         nine_sixteen = safe_locate_any(["insta_916_small.png"], confidence=0.7, retries=8, delay=0.2)
         if nine_sixteen:
-            _log(f"PAG: clicking 9:16 at {nine_sixteen}...")
             pyautogui.click(nine_sixteen.x, nine_sixteen.y)
         else:
             ms_916 = locate_multiscale("insta_916_small.png", confidence=0.65)
             cal_916 = calibrated_point("nine_sixteen")
             if ms_916:
-                _log(f"PAG: 9:16 found via multiscale at {ms_916}, clicking...")
                 pyautogui.click(ms_916)
             elif cal_916:
-                _log(f"PAG: 9:16 via saved calibration point: {cal_916}")
                 pyautogui.click(cal_916)
             else:
-                _log("PAG: 9:16 image not found by any tier, using coords (668, 853)...")
                 pyautogui.click(668, 853)
-
         time.sleep(0.2)
         _log("PAG: crop done.")
     else:
@@ -482,36 +441,25 @@ def upload_instagram_chrome_only(caption: str, video_file: str, paste_path_func)
     Chrome-only hybrid, mirrors TikTok's upload(): PAG handles the two
     things DOM structurally can't do reliably — select_file (needs a
     trusted OS click to open the native file dialog) and actually typing
-    the caption (DOM only focuses the box; typing into Instagram's Lexical
-    editor via script is unreliable, same reasoning as TikTok's DraftJS).
-    DOM/extension handles Create, Post, crop, 9:16, both Nexts,
-    caption-focus, and Share automatically, triggered by background.js
-    when it sees the marked automation tab
-    (instagram.com/...?sunset_upload=1 — see utils.py).
+    the caption. DOM/extension handles Create, Post, crop, 9:16, both
+    Nexts, caption-focus, and Share automatically, triggered by
+    background.js when it sees the marked automation tab.
 
-    Sequencing: background.js fires Create+Post ~2s after page load. This
-    function sleeps briefly first so DOM has already gotten there before
-    PAG goes looking for 'Select from computer'. After file select, DOM
-    independently walks through crop -> 9:16 -> Next -> Next -> caption
-    focus on its own (each step polls with a generous timeout, so it
-    naturally waits through however long PAG's file selection took). This
-    function sleeps again to give DOM time to reach the caption-focused
-    state, then PAG types the actual caption text. DOM's own
-    waitForCaptionToStabilize() then waits for PAG to finish before
-    clicking Share — that's the real synchronization point, not exact
-    timing here.
+    Uses signal_server to synchronize with DOM instead of blind sleeps:
+    waits for 'ig-post-clicked' before touching the file dialog, and for
+    'ig-caption-ready' before typing the caption.
     """
-    _log("Starting Instagram upload (Chrome-only hybrid — DOM handles everything but file select + caption typing)")
-    time.sleep(4)  # let DOM's auto-trigger (Create + Post) run first
+    _log("Starting Instagram upload (Chrome-only hybrid)")
+    signal_server.wait_for("ig-post-clicked", timeout=15)
 
     if not select_file_only(video_file, paste_path_func, select_crop=False):
         _log("Could not select file — aborting.")
         return False
 
-    _log("File selected. Waiting for DOM to walk through crop/9:16/Next/Next and focus the caption box...")
-    time.sleep(5)  # crop -> 9:16 -> Next -> Next -> focus, each DOM step is near-instant but has its own small sleeps
+    _log("File selected. Waiting for DOM to focus the caption box...")
+    signal_server.wait_for("ig-caption-ready", timeout=20)
 
-    _log("Typing caption (DOM already focused the box, PAG just types into it)...")
+    _log("Typing caption...")
     pyautogui.hotkey('ctrl', 'a')
     pyautogui.press('backspace')
     pyautogui.write(caption, interval=0.05)

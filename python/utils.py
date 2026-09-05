@@ -168,23 +168,35 @@ def _chrome_is_running():
         return False
 
 
+def _chrome_has_visible_window():
+    try:
+        return len(gw.getWindowsWithTitle("Chrome")) > 0
+    except Exception:
+        return False
+
+
 def launch_chrome_with_extension(extension_path=None, profile_dir=None):
-    """
-    Only closes/relaunches Chrome if it isn't already running.
-    --load-extension only takes effect on a genuinely fresh process, but
-    forcing a close on every automation run destroys the user's open
-    tabs — not acceptable for real users. If Chrome is already running,
-    we assume this app launched it earlier with the extension loaded and
-    reuse it as-is.
-    """
     extension_path = extension_path or os.environ.get("SUNSET_EXTENSION_PATH")
     if not extension_path or not os.path.isdir(extension_path):
         print(f" No valid extension path ({extension_path!r}) — falling back to plain Chrome launch.")
         return launch_chrome()
 
     if _chrome_is_running():
-        print(" Chrome is already running — reusing it, not closing any tabs.")
-        return
+        if _chrome_has_visible_window():
+            print(" Chrome is running with a visible window — reusing it, not closing any tabs.")
+            _try_focus_chrome_window()
+            time.sleep(0.3)
+            return
+        else:
+            # No visible window means no tabs to lose. A lingering
+            # background chrome.exe (e.g. Chrome's "continue running
+            # background apps when closed" setting) still counts as
+            # "running" to tasklist, but --load-extension only ever
+            # takes effect on a genuinely fresh process — so this
+            # background process has to go before we can load the
+            # extension at all.
+            print(" Chrome process lingering in background with no visible window — closing it so the extension can load fresh.")
+            _close_existing_chrome()
 
     chrome_exe = find_chrome_exe()
     if not chrome_exe:
@@ -211,21 +223,7 @@ def launch_chrome_with_extension(extension_path=None, profile_dir=None):
         print(" Chrome launch with extension failed:", e)
         return launch_chrome()
 
-    chrome_window = None
-    for _ in range(10):
-        windows = gw.getWindowsWithTitle("Chrome")
-        if windows:
-            chrome_window = windows[0]
-            break
-        time.sleep(1)
-
-    if chrome_window:
-        try:
-            chrome_window.activate()
-            chrome_window.maximize()
-            print(" Activated and maximized Chrome window")
-        except Exception as e:
-            print(" Failed to manipulate Chrome window:", e)
+    _try_focus_chrome_window()
 
 def _try_focus_chrome_window():
     try:

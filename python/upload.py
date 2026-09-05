@@ -185,6 +185,7 @@ def main():
 
     if 'instagram' in platforms:
         try:
+            signal_server.start()
             open_new_tab_and_search("instagram.com/?sunset_upload=1", delay=1.5)
             upload_instagram_electron.upload_instagram_chrome_only(caption, video, paste_path_and_confirm)
         except Exception as e:
