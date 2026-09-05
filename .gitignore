@@ -39,3 +39,17 @@ python/*.exe
 node_modules/
 dist/
 build/win-unpacked/
+
+python/python.exe
+python/python3.dll
+python/python313.dll
+python/python313.zip
+python/python313._pth
+python/get-pip.py
+python/LICENSE.txt
+python/python.cat
+python/*.pyd
+python/*.dll
+python/Lib/
+python/Scripts/
+python/__pycache__/
