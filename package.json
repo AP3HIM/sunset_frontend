@@ -9,7 +9,9 @@
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "vite": "vite",
     "build": "vite build",
-    "dist": "npm run build && electron-builder"
+    "predist": "node scripts/ensure-python.js",
+    "dist": "npm run build && electron-builder",
+    "postdist": "node scripts/verify-dist.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.876.0",
@@ -46,32 +48,26 @@
     "vite": "^7.0.4",
     "wait-on": "^8.0.4"
   },
-    "build": {
-      "appId": "com.sunsetuploader.app",
-      "productName": "SunsetUploader",
-      "directories": {
-        "buildResources": "build"
+  "build": {
+    "appId": "com.sunsetuploader.app",
+    "productName": "SunsetUploader",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": ["dist/**/*", "electron.cjs", "preload.cjs"],
+    "extraResources": [
+      {
+        "from": "extension",
+        "to": "extension"
       },
-      "files": [
-        "dist/**/*",
-        "electron.cjs",
-        "preload.cjs"
-      ],
-      "extraFiles": [
-        {
-          "from": "python",
-          "to": "python"
-        }
-      ],
-      "extraResources": [
-        {
-          "from": "extension",
-          "to": "extension"
-        }
-      ],
-      "win": {
-        "target": "nsis",
-        "icon": "build/sunset-logo-resized-1024.ico"
+      {
+        "from": "python",
+        "to": "python"
       }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/sunset-logo-resized-1024.ico"
     }
+  }
 }
