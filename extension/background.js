@@ -50,6 +50,10 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "X_REFOCUSED") {
     fetch("http://127.0.0.1:8765/signal/x-refocused", { method: "POST" }).catch(() => {});
   }
+  // NEW: relays twitter.js's Grok-A/B-menu detection to Python.
+  if (message.type === "X_GROK_MENU_HANDLED") {
+    fetch("http://127.0.0.1:8765/signal/x-grok-menu-handled", { method: "POST" }).catch(() => {});
+  }
   if (message.type === "IG_POST_CLICKED") {
     fetch("http://127.0.0.1:8765/signal/ig-post-clicked", { method: "POST" }).catch(() => {});
   }
@@ -85,13 +89,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     setTimeout(() => sendWithRetry(tabId, { type: "START_TT_POST" }), 24000);
   }
 
-  // FIX: was `tab.url?.includes("instagram.com") && tab.url?.includes("sunset_upload=1")`.
-  // Instagram's own client-side redirect strips the ?sunset_upload=1 marker
-  // (same bug class that hit YouTube before — see the loose match above),
-  // so that `&&` could simply never pass. Loosened to match YT/X/TikTok's
-  // already-proven pattern. The claim() dedup below still guarantees this
-  // only fires once per tab, so this doesn't reopen the old duplicate-flow
-  // bug — it's exactly as safe as the TikTok/YouTube checks already are.
+  // FIX (from the Instagram session): was
+  // `tab.url?.includes("instagram.com") && tab.url?.includes("sunset_upload=1")`.
+  // Instagram's own client-side redirect strips the ?sunset_upload=1
+  // marker, so that `&&` could simply never pass. Loosened to match
+  // YT/X/TikTok's already-proven pattern. claim() dedup still guarantees
+  // this only fires once per tab.
   if (tab.url?.includes("instagram.com")) {
     if (!claim("ig", tabId)) {
       console.log("INSTAGRAM: already triggered for this tab, skipping.");

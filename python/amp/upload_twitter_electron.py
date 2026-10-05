@@ -199,6 +199,20 @@ def upload_twitter_hybrid(caption, video_file, paste_path_func):
     click_media_button()
     time.sleep(0.6)
 
+    # NEW: some accounts are A/B tested into a "Generate with Grok" vs.
+    # "Upload" menu here instead of the native file picker opening
+    # directly. DOM (twitter.js) watches for that menu and clicks "Upload"
+    # for us if it exists. A timeout here is the NORMAL case for every
+    # account not in that test — it just means the menu never appeared,
+    # so we fall straight through to pasting the path exactly as before.
+    print(" X: Checking whether this account shows the Grok/Upload menu...")
+    grok_handled = signal_server.wait_for("x-grok-menu-handled", timeout=4)
+    if grok_handled:
+        print(" X: Grok menu was present — DOM already clicked Upload.")
+        time.sleep(0.4)  # let the real file dialog finish opening
+    else:
+        print(" X: No Grok menu on this account — proceeding as usual.")
+
     print(" X: Pasting file path into native dialog...")
     paste_path_func(video_file)
 

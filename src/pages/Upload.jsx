@@ -109,7 +109,7 @@ const Upload = () => {
       setShowPopup(true);
     } else {
       window.location.href =
-        "https://cdn.sunsetuploader.com/SunsetUploader%20Setup%201.0.0.exe";
+        "https://cdn.sunsetuploader.com/SunsetUploader%20Setup%201.0.1.exe";
     }
   };
 
