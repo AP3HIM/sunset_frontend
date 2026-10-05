@@ -85,7 +85,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     setTimeout(() => sendWithRetry(tabId, { type: "START_TT_POST" }), 24000);
   }
 
-  if (tab.url?.includes("instagram.com") && tab.url?.includes("sunset_upload=1")) {
+  // FIX: was `tab.url?.includes("instagram.com") && tab.url?.includes("sunset_upload=1")`.
+  // Instagram's own client-side redirect strips the ?sunset_upload=1 marker
+  // (same bug class that hit YouTube before — see the loose match above),
+  // so that `&&` could simply never pass. Loosened to match YT/X/TikTok's
+  // already-proven pattern. The claim() dedup below still guarantees this
+  // only fires once per tab, so this doesn't reopen the old duplicate-flow
+  // bug — it's exactly as safe as the TikTok/YouTube checks already are.
+  if (tab.url?.includes("instagram.com")) {
     if (!claim("ig", tabId)) {
       console.log("INSTAGRAM: already triggered for this tab, skipping.");
     } else {

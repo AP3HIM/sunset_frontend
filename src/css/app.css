@@ -18,6 +18,16 @@ body {
 
 section {
   scroll-snap-align: start;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.features-section,
+.testimonials-section {
+  min-height: auto;
+  display: block;
 }
 
 .app-container {

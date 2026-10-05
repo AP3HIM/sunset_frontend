@@ -53,3 +53,7 @@ python/*.dll
 python/Lib/
 python/Scripts/
 python/__pycache__/
+.python-bundle.zip
+__pycache__/
+*.pyc
+python-bundle.zip

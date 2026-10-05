@@ -22,12 +22,15 @@ export default function Demo() {
           </p>
 
           <div className="demo-video-box">
-            <iframe
-              src="https://www.youtube.com/shorts/_kT6eFrdpYM"
-              title="SunsetUploader Demo Video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+            <video
+              className="demo-video"
+              src="/sunset_demo.mp4"
+              controls
+              playsInline
+              muted
+              autoPlay
+              loop
+            />
           </div>
         </div>
 

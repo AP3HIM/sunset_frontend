@@ -448,16 +448,41 @@ def upload_instagram_chrome_only(caption: str, video_file: str, paste_path_func)
     Uses signal_server to synchronize with DOM instead of blind sleeps:
     waits for 'ig-post-clicked' before touching the file dialog, and for
     'ig-caption-ready' before typing the caption.
+
+    HARDENED: previously this proceeded into the PAG steps even when
+    'ig-post-clicked' timed out — meaning if background.js's URL match
+    never fired (the actual sunset_upload=1 bug), Python would blindly
+    press Tab+Enter and paste a file path into whatever happened to have
+    focus, with nothing useful in the logs to show why. Now a timeout here
+    is treated as a real failure and aborts cleanly instead.
     """
     _log("Starting Instagram upload (Chrome-only hybrid)")
-    signal_server.wait_for("ig-post-clicked", timeout=15)
+    # instagram.js allows up to 30s of polling for Create AND up to another
+    # 30s for Post before it gives up on either — so worst case DOM doesn't
+    # send IG_POST_CLICKED until ~60s in. The old 15s timeout here was
+    # shorter than DOM's own allowance, so Python could (and did) give up
+    # before DOM actually finished. Matched to DOM's real budget now.
+    post_clicked = signal_server.wait_for("ig-post-clicked", timeout=65)
+    if not post_clicked:
+        _log("DOM never signaled 'ig-post-clicked' — the extension didn't start the flow "
+             "(or didn't get far enough to click Post). Aborting instead of typing blind. "
+             "Check the Instagram tab's DevTools console for 'SunsetUploader: received "
+             "START_IG_UPLOAD' — if that's missing too, background.js never matched the tab.")
+        return False
 
     if not select_file_only(video_file, paste_path_func, select_crop=False):
         _log("Could not select file — aborting.")
         return False
 
     _log("File selected. Waiting for DOM to focus the caption box...")
-    signal_server.wait_for("ig-caption-ready", timeout=20)
+    # Same reasoning as above: waitForCropAndSelect916 (15s) + two
+    # clickNextButton calls (up to 30s each) + focusCaptionBox (30s) is a
+    # real worst-case budget well past 20s on the DOM side.
+    caption_ready = signal_server.wait_for("ig-caption-ready", timeout=65)
+    if not caption_ready:
+        _log("DOM never signaled 'ig-caption-ready' — the crop/Next/Next steps likely stalled. "
+             "Aborting instead of typing the caption into an unknown focus target.")
+        return False
 
     _log("Typing caption...")
     pyautogui.hotkey('ctrl', 'a')

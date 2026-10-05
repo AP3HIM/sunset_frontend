@@ -112,6 +112,23 @@ function exactText(el, text) {
   return el.textContent?.trim() === text;
 }
 
+// FIX: Instagram renamed this field's aria-label from "Write a caption..."
+// to "Add a caption..." at some point — confirmed from a live DOM dump
+// (the old hardcoded selector matched neither "found" nor fired a useful
+// error, it just polled until timeout). Tries both current and legacy
+// labels so a future rename back (or an A/B test) doesn't silently break
+// this again the same way. Add any newly-observed label to this list if
+// it breaks a third time.
+const CAPTION_BOX_LABELS = ["Add a caption...", "Write a caption..."];
+
+function findCaptionBox() {
+  for (const label of CAPTION_BOX_LABELS) {
+    const el = document.querySelector(`[aria-label="${label}"][contenteditable="true"]`);
+    if (el) return el;
+  }
+  return null;
+}
+
 // Same proven pattern as tiktok.js — polls the caption box's actual text
 // until it stops changing for a full stableWindowMs, instead of guessing
 // a fixed delay is long enough for PAG to finish typing.
@@ -121,9 +138,7 @@ async function waitForCaptionToStabilize(stableWindowMs = 1500, timeoutMs = 3000
   let lastChangeTime = Date.now();
 
   while (Date.now() < deadline) {
-    const box = document.querySelector(
-      '[aria-label="Write a caption..."][contenteditable="true"]'
-    );
+    const box = findCaptionBox();
     const currentText = box?.innerText?.trim() || "";
 
     if (currentText !== lastText) {
@@ -215,9 +230,7 @@ function focusCaptionBox(timeout = 30000) {
     const start = Date.now();
 
     const tryFocus = () => {
-      const box = document.querySelector(
-        '[aria-label="Write a caption..."][contenteditable="true"]'
-      );
+      const box = findCaptionBox();
 
       if (box && box.offsetParent !== null) {
         box.focus();
