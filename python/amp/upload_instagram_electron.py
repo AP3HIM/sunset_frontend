@@ -348,7 +348,8 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
         return False
 
 
-def select_file_only(video_file: str, paste_path_func, select_crop: bool = False) -> bool:
+def select_file_only(video_file: str, paste_path_func, select_crop: bool = False,
+                     dom_focused: bool = False) -> bool:
     """
     Called in hybrid mode. PAG handles file selection + crop via a single
     trusted Tab+Enter -> native file dialog. DOM handles Create/Post before
@@ -358,11 +359,19 @@ def select_file_only(video_file: str, paste_path_func, select_crop: bool = False
     _try_focus_chrome_window()
     time.sleep(0.3)
 
-    _log(" Tab once + Enter to reach 'Select from computer'...")
-    pyautogui.press('tab')
-    time.sleep(0.8)
-    pyautogui.press('enter')
-    time.sleep(0.8)
+    if dom_focused:
+        # The extension already focused "Select from computer", so no Tab is
+        # needed (an extra Tab here would move focus OFF the button).
+        _log(" DOM already focused 'Select from computer' — pressing Enter only...")
+        time.sleep(0.3)
+        pyautogui.press('enter')
+        time.sleep(0.8)
+    else:
+        _log(" Tab once + Enter to reach 'Select from computer'...")
+        pyautogui.press('tab')
+        time.sleep(0.8)
+        pyautogui.press('enter')
+        time.sleep(0.8)
 
     time.sleep(0.2)
     _log(f"PAG: pasting file path: {video_file}")
@@ -470,7 +479,12 @@ def upload_instagram_chrome_only(caption: str, video_file: str, paste_path_func)
              "START_IG_UPLOAD' — if that's missing too, background.js never matched the tab.")
         return False
 
-    if not select_file_only(video_file, paste_path_func, select_crop=False):
+    # The extension focuses "Select from computer" itself and says so with
+    # 'ig-select-focused' (sent just before 'ig-post-clicked', so it's normally
+    # already here). If it couldn't, fall back to the old Tab + Enter.
+    dom_focused = signal_server.wait_for("ig-select-focused", timeout=3)
+
+    if not select_file_only(video_file, paste_path_func, select_crop=False, dom_focused=dom_focused):
         _log("Could not select file — aborting.")
         return False
 

@@ -30,6 +30,36 @@ from utils import launch_chrome, launch_chrome_with_extension, open_new_tab_and_
 
 print("Raw sys.argv:", sys.argv)
 
+# Platforms this release supports. YouTube and X are not part of the Chrome
+# extension, so anything else is skipped with a clear message instead of
+# half-running and typing into the wrong window.
+SUPPORTED_PLATFORMS = ["tiktok", "instagram"]
+
+# Set this to the Chrome Web Store listing URL once the extension is approved.
+# If the extension isn't detected, this page is opened for the user.
+EXTENSION_STORE_URL = ""
+
+# How long to wait for the extension to answer after the first tab opens.
+EXTENSION_WAIT_SECONDS = 20
+
+
+def ensure_extension_ready():
+    """The extension pings the local server whenever a TikTok/Instagram page
+    finishes loading while this app is running. If that never happens, the
+    extension isn't installed (or is disabled) and the DOM steps (clicking
+    Post, Share, etc.) can't work, so say so instead of half-uploading."""
+    if signal_server.wait_for("extension-ready", timeout=EXTENSION_WAIT_SECONDS):
+        return True
+    print("[SETUP] The SunsetUploader Chrome extension didn't respond.")
+    print("[SETUP] Install/enable it in Chrome, then run the upload again.")
+    if EXTENSION_STORE_URL:
+        try:
+            import webbrowser
+            webbrowser.open(EXTENSION_STORE_URL)
+        except Exception:
+            pass
+    return False
+
 
 def copy_to_clipboard(text):
     if pyperclip:
@@ -172,13 +202,35 @@ def main():
         return
 
     # ── full — hybrid DOM+PAG ───────────────────────────────────────────────
+    skipped = [p for p in platforms if p not in SUPPORTED_PLATFORMS]
+    if skipped:
+        print(f"Skipping unsupported platform(s): {skipped}. Supported: {SUPPORTED_PLATFORMS}")
+    platforms = [p for p in platforms if p in SUPPORTED_PLATFORMS]
+    if not platforms:
+        print("No supported platforms selected — nothing to do.")
+        sys.exit(1)
+
     print(f"Full mode for: {platforms}")
     launch_chrome_with_extension()
     time.sleep(1)
 
+    # The extension only acts while this local server is up (so it never
+    # touches normal browsing), so it has to be running before any tab opens.
+    signal_server.start()
+
+    extension_ok = None
+
+    def extension_ready():
+        nonlocal extension_ok
+        if extension_ok is None:
+            extension_ok = ensure_extension_ready()
+        return extension_ok
+
     if 'tiktok' in platforms:
         try:
             open_new_tab_and_search("tiktok.com/upload", delay=1.5)
+            if not extension_ready():
+                sys.exit(2)
             upload_tiktok_electron.upload(caption, video, paste_path_and_confirm)
         except Exception as e:
             print(f"Error during TikTok upload: {e}")
@@ -187,6 +239,8 @@ def main():
         try:
             signal_server.start()
             open_new_tab_and_search("instagram.com/?sunset_upload=1", delay=1.5)
+            if not extension_ready():
+                sys.exit(2)
             upload_instagram_electron.upload_instagram_chrome_only(caption, video, paste_path_and_confirm)
         except Exception as e:
             print(f"Error during Instagram upload: {e}")

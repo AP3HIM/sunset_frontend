@@ -1,22 +1,25 @@
-console.log("SunsetUploader background.js LOADED");
-console.log("SunsetUploader background.js LOADED v4");
+console.log("SunsetUploader Companion: background loaded");
 
-const startedTabs = { yt: new Set(), x: new Set(), ig: new Set() };
+// This extension is a companion to the SunsetUploader desktop app. It only
+// acts while that app is running: the app opens a small server on this
+// computer (127.0.0.1:8765), and every action below is gated on reaching it.
+// If the app isn't running, the extension does nothing at all — so normal
+// browsing on TikTok or Instagram is never touched.
+const SIGNAL_BASE = "http://127.0.0.1:8765/signal";
 
-// Rehydrate in-memory state on worker startup/respawn so a freshly
-// respawned worker doesn't forget it already fired for a tab that's
-// still open.
+const startedTabs = { ig: new Set(), tt: new Set() };
+
+// Rehydrate in-memory state if the service worker was restarted while a tab
+// we already handled is still open.
 chrome.storage.session.get(null).then((all) => {
   for (const key of Object.keys(all)) {
-    const m = key.match(/^started_(yt|x|ig)_(\d+)$/);
+    const m = key.match(/^started_(ig|tt)_(\d+)$/);
     if (m) startedTabs[m[1]].add(Number(m[2]));
   }
 });
 
-// Synchronous claim — this is the actual fix. No `await` happens before
-// the check-and-set, so two near-simultaneous onUpdated firings for the
-// same tab can never both pass. Storage write below is fire-and-forget,
-// purely for respawn persistence, not part of the decision.
+// Synchronous check-and-set so two near-simultaneous page-load events for the
+// same tab can never both start a flow.
 function claim(kind, tabId) {
   if (startedTabs[kind].has(tabId)) return false;
   startedTabs[kind].add(tabId);
@@ -26,86 +29,70 @@ function claim(kind, tabId) {
 
 function sendWithRetry(tabId, message, attempts = 6, delay = 1000) {
   chrome.tabs.sendMessage(tabId, message, () => {
-    if (chrome.runtime.lastError) {
-      console.log("SunsetUploader: send failed (retrying):", chrome.runtime.lastError.message);
+    const err = chrome.runtime.lastError;
+    // The page scripts receive these messages but never send a reply, so
+    // Chrome reports "message port closed before a response was received".
+    // That means the message WAS delivered; retrying it would just re-send it.
+    if (err && /message port closed/i.test(err.message)) return;
+    if (err) {
+      console.log("SunsetUploader Companion: send failed (retrying):", err.message);
       if (attempts > 0) {
         setTimeout(() => sendWithRetry(tabId, message, attempts - 1, delay), delay);
       } else {
-        console.error("SunsetUploader: gave up sending", message.type, "to tab", tabId);
+        console.error("SunsetUploader Companion: gave up sending", message.type, "to tab", tabId);
       }
     }
   });
 }
 
+// Reaching the desktop app's local server = "the app is running". The same
+// request also tells the app this extension is installed and alive.
+async function desktopAppIsRunning() {
+  try {
+    await fetch(`${SIGNAL_BASE}/extension-ready`, { method: "POST" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function relay(signalName) {
+  fetch(`${SIGNAL_BASE}/${signalName}`, { method: "POST" }).catch(() => {});
+}
+
+function hostOf(url) {
+  try { return new URL(url).hostname; } catch { return ""; }
+}
+
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === "YT_DETAILS_READY") {
-    fetch("http://127.0.0.1:8765/signal/ready", { method: "POST" }).catch(() => {});
-  }
-  if (message.type === "YT_PUBLISH_FALLBACK_NEEDED") {
-    fetch("http://127.0.0.1:8765/signal/publish-fallback-needed", { method: "POST" }).catch(() => {});
-  }
-  if (message.type === "X_COMPOSE_READY") {
-    fetch("http://127.0.0.1:8765/signal/x-compose-ready", { method: "POST" }).catch(() => {});
-  }
-  if (message.type === "X_REFOCUSED") {
-    fetch("http://127.0.0.1:8765/signal/x-refocused", { method: "POST" }).catch(() => {});
-  }
-  // NEW: relays twitter.js's Grok-A/B-menu detection to Python.
-  if (message.type === "X_GROK_MENU_HANDLED") {
-    fetch("http://127.0.0.1:8765/signal/x-grok-menu-handled", { method: "POST" }).catch(() => {});
-  }
-  if (message.type === "IG_POST_CLICKED") {
-    fetch("http://127.0.0.1:8765/signal/ig-post-clicked", { method: "POST" }).catch(() => {});
-  }
-  if (message.type === "IG_CAPTION_READY") {
-    fetch("http://127.0.0.1:8765/signal/ig-caption-ready", { method: "POST" }).catch(() => {});
-  }
+  if (message.type === "IG_SELECT_FOCUSED") relay("ig-select-focused");
+  if (message.type === "IG_POST_CLICKED") relay("ig-post-clicked");
+  if (message.type === "IG_CAPTION_READY") relay("ig-caption-ready");
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== "complete") return;
-  console.log("PAGE COMPLETE:", tab.url);
 
-  if (tab.url?.includes("studio.youtube.com")) {
-    if (!claim("yt", tabId)) {
-      console.log("YOUTUBE: already triggered for this tab, skipping.");
-    } else {
-      console.log("YOUTUBE URL MATCHED (loose check):", tab.url);
-      setTimeout(() => sendWithRetry(tabId, { type: "START_YT_UPLOAD" }), 6000);
-    }
-  }
+  const host = hostOf(tab.url);
+  const isTikTok = host === "www.tiktok.com";
+  const isInstagram = host === "www.instagram.com";
+  if (!isTikTok && !isInstagram) return;
 
-  if (tab.url?.includes("x.com/compose/post")) {
-    if (!claim("x", tabId)) {
-      console.log("X: already triggered for this tab, skipping.");
-    } else {
-      console.log("X COMPOSE MATCHED:", tab.url);
-      setTimeout(() => sendWithRetry(tabId, { type: "START_X_UPLOAD" }), 2000);
-    }
-  }
+  // Gate: do nothing unless the desktop app is running.
+  if (!(await desktopAppIsRunning())) return;
 
-  if (tab.url?.includes("tiktok.com")) {
-    console.log("TIKTOK URL MATCHED (loose check):", tab.url);
+  if (isTikTok && claim("tt", tabId)) {
+    console.log("SunsetUploader Companion: TikTok tab matched:", tab.url);
     setTimeout(() => sendWithRetry(tabId, { type: "START_TT_POST" }), 24000);
   }
 
-  // FIX (from the Instagram session): was
-  // `tab.url?.includes("instagram.com") && tab.url?.includes("sunset_upload=1")`.
-  // Instagram's own client-side redirect strips the ?sunset_upload=1
-  // marker, so that `&&` could simply never pass. Loosened to match
-  // YT/X/TikTok's already-proven pattern. claim() dedup still guarantees
-  // this only fires once per tab.
-  if (tab.url?.includes("instagram.com")) {
-    if (!claim("ig", tabId)) {
-      console.log("INSTAGRAM: already triggered for this tab, skipping.");
-    } else {
-      console.log("INSTAGRAM AUTOMATION TAB MATCHED:", tab.url);
-      setTimeout(() => sendWithRetry(tabId, { type: "START_IG_UPLOAD", caption: "" }), 2000);
-    }
+  if (isInstagram && claim("ig", tabId)) {
+    console.log("SunsetUploader Companion: Instagram tab matched:", tab.url);
+    setTimeout(() => sendWithRetry(tabId, { type: "START_IG_UPLOAD", caption: "" }), 2000);
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   for (const kind of Object.keys(startedTabs)) startedTabs[kind].delete(tabId);
-  chrome.storage.session.remove(["yt", "x", "ig"].map(k => `started_${k}_${tabId}`));
+  chrome.storage.session.remove(["ig", "tt"].map((k) => `started_${k}_${tabId}`));
 });

@@ -35,6 +35,8 @@ class _ReusableHTTPServer(HTTPServer):
 
 def start(port=8765):
     global _server, _thread
+    if _server is not None:
+        return  # already running: don't re-bind the port or wipe signals already received
     _events.clear()
     _server = _ReusableHTTPServer(("127.0.0.1", port), _Handler)
     _thread = threading.Thread(target=_server.serve_forever, daemon=True)

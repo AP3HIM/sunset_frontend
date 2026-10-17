@@ -1,6 +1,7 @@
 console.log("SunsetUploader: TikTok content script loaded");
 
 let uploadStarted = false;
+let ttPostRunning = false;
 
 chrome.runtime.sendMessage({
   type: "DOM_READY_TT",
@@ -18,7 +19,14 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === "START_TT_POST") {
-    clickTikTokPost();
+    // Never run two Post loops at once (a repeated START message used to
+    // start a second one that could click Post again).
+    if (ttPostRunning) {
+      console.log("SunsetUploader: TikTok post already running, ignoring repeat START.");
+      return;
+    }
+    ttPostRunning = true;
+    clickTikTokPost().finally(() => { ttPostRunning = false; });
   }
 });
 
@@ -113,7 +121,11 @@ async function waitForCaptionToStabilize(
 }
 
 async function clickTikTokPost() {
-  await waitForCaptionToStabilize();
+  // Was a 30s wait. Python types the caption on its own clock, so on a
+  // slower machine it can still be mid-typing after 30s — and this code
+  // would then click Post anyway with a half-typed or filename-only
+  // caption. Give PAG up to 2 minutes to finish before moving on.
+  await waitForCaptionToStabilize(1500, 120000);
 
   console.log("Looking for Post button...");
 

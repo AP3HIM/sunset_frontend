@@ -1,42 +1,35 @@
 {
   "manifest_version": 3,
-  "name": "SunsetUploader DOM Controller",
-  "description": "Automates uploads using real browser DOM interactions",
-  "version": "0.1.0",
+  "name": "SunsetUploader Companion",
+  "description": "Companion for the SunsetUploader desktop app. Helps it upload your own videos to TikTok and Instagram.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": [
-    "tabs",
-    "scripting",
-    "activeTab",
     "storage"
   ],
   "host_permissions": [
     "https://www.tiktok.com/*",
-    "https://www.youtube.com/*",
-    "https://studio.youtube.com/*",
     "https://www.instagram.com/*",
-    "https://x.com/*",
     "http://127.0.0.1:8765/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "SunsetUploader"
+    "default_title": "SunsetUploader Companion"
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://studio.youtube.com/*",
-        "https://www.tiktok.com/*",
-        "https://www.instagram.com/*",
-        "https://x.com/*"
-      ],
-      "js": [
-        "content/youtube.js",
-        "content/tiktok.js",
-        "content/instagram.js",
-        "content/twitter.js"
-      ]
+      "matches": ["https://www.tiktok.com/*"],
+      "js": ["content/tiktok.js"]
+    },
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content/instagram.js"]
     }
   ]
 }
