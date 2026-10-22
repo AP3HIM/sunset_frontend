@@ -26,7 +26,7 @@ except ImportError:
     pyperclip = None
 
 from amp import upload_instagram_electron, upload_tiktok_electron, upload_twitter_electron, upload_youtube_electron
-from utils import launch_chrome, launch_chrome_with_extension, open_new_tab_and_search
+from utils import launch_chrome, launch_chrome_with_extension, open_new_tab_and_search, find_chrome_exe
 
 print("Raw sys.argv:", sys.argv)
 
@@ -35,9 +35,10 @@ print("Raw sys.argv:", sys.argv)
 # half-running and typing into the wrong window.
 SUPPORTED_PLATFORMS = ["tiktok", "instagram"]
 
-# Set this to the Chrome Web Store listing URL once the extension is approved.
-# If the extension isn't detected, this page is opened for the user.
-EXTENSION_STORE_URL = ""
+# The extension's Chrome Web Store page. Paste the link from the developer
+# dashboard: https://chromewebstore.google.com/detail/<extension-id>
+# If the extension isn't detected, this page is opened in Chrome for the user.
+EXTENSION_STORE_URL = "https://chromewebstore.google.com/detail/kfbhijfogikjkomlpoglpebolopbllip"
 
 # How long to wait for the extension to answer after the first tab opens.
 EXTENSION_WAIT_SECONDS = 20
@@ -50,15 +51,31 @@ def ensure_extension_ready():
     Post, Share, etc.) can't work, so say so instead of half-uploading."""
     if signal_server.wait_for("extension-ready", timeout=EXTENSION_WAIT_SECONDS):
         return True
-    print("[SETUP] The SunsetUploader Chrome extension didn't respond.")
-    print("[SETUP] Install/enable it in Chrome, then run the upload again.")
+    print("[SETUP] SunsetUploader's Chrome extension wasn't detected.")
     if EXTENSION_STORE_URL:
-        try:
-            import webbrowser
-            webbrowser.open(EXTENSION_STORE_URL)
-        except Exception:
-            pass
+        print("[SETUP] Opening its Chrome Web Store page: click 'Add to Chrome', then run the upload again.")
+        print(f"[SETUP] {EXTENSION_STORE_URL}")
+        open_extension_page()
+    else:
+        print("[SETUP] Install 'SunsetUploader Companion' from the Chrome Web Store, then run the upload again.")
     return False
+
+
+def open_extension_page():
+    """Open the Store page in Chrome itself (the user's default browser might
+    not be Chrome), falling back to the default browser."""
+    try:
+        chrome_exe = find_chrome_exe()
+        if chrome_exe:
+            subprocess.Popen([chrome_exe, EXTENSION_STORE_URL])
+            return
+    except Exception:
+        pass
+    try:
+        import webbrowser
+        webbrowser.open(EXTENSION_STORE_URL)
+    except Exception:
+        pass
 
 
 def copy_to_clipboard(text):

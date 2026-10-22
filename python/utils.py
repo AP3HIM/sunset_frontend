@@ -175,7 +175,25 @@ def _chrome_has_visible_window():
         return False
 
 
+# The extension is now installed from the Chrome Web Store, so the app no
+# longer loads its own bundled copy. Current Chrome ignores --load-extension
+# anyway, and on older builds that still honor it, a second copy would run
+# alongside the Store one and every click would fire twice. It also meant
+# closing the user's background Chrome just to relaunch it. Leave this False
+# unless you are testing an unpacked copy in Chrome for Testing / Chromium.
+LOAD_BUNDLED_EXTENSION = False
+
+
 def launch_chrome_with_extension(extension_path=None, profile_dir=None):
+    if not LOAD_BUNDLED_EXTENSION:
+        if _chrome_is_running() and _chrome_has_visible_window():
+            print(" Chrome is running with a visible window — reusing it, not closing any tabs.")
+            _try_focus_chrome_window()
+            time.sleep(0.3)
+            return
+        print(" Starting Chrome (the extension comes from the Chrome Web Store).")
+        return launch_chrome()
+
     extension_path = extension_path or os.environ.get("SUNSET_EXTENSION_PATH")
     if not extension_path or not os.path.isdir(extension_path):
         print(f" No valid extension path ({extension_path!r}) — falling back to plain Chrome launch.")

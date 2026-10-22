@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/home.css";
 
-const DOWNLOAD_URL = "https://cdn.sunsetuploader.com/SunsetUploader%20Setup%201.0.1.exe";
+const DOWNLOAD_URL = "https://cdn.sunsetuploader.com/SunsetUploader%20Setup%201.0.2.exe";
 
 const YoutubeIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">

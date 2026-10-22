@@ -1,7 +1,7 @@
 {
   "name": "sunsetuploader",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "electron.cjs",
   "description": "An Electron App to complete change the way content creators and anyone else in the world uploads content.",
   "author": "Adi Patel",

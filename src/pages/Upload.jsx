@@ -12,76 +12,27 @@ import { Download, Settings2 } from "lucide-react";
 import "../css/Upload.css";
 import "../css/hero.css"; // for popup styling
 
-// All platforms' calibration steps live here. TikTok and Instagram are
-// real (matched to the actual DOM/PAG code). YouTube and Twitter are
-// placeholders until we've been through their upload scripts the same way
-// — swap these out once we have, don't calibrate against guessed labels.
+// Steps shown in the "Tailor to your screen" wizard. Only TikTok's "Select
+// video" click still uses a recorded spot. Instagram's file picker is handled
+// by the extension plus a keypress, so it needs nothing from the user.
 const CALIBRATION_STEPS = {
   tiktok: [
     {
       action: "select_video",
-      label: "Select Video button (usually not needed — image match handles this on most screens)",
+      label: "Select video button",
       prep: [
         "Go to tiktok.com/upload in Chrome.",
         "Hover over the \"Select video\" button — don't click it.",
-        "Once you're sitting on it, hit Ready below and press F9 while still hovering.",
-      ],
-    },
-  ],
-  
-  instagram: [
-    {
-      action: "select_file",
-      label: "Select File button (the one PAG/calibration step Instagram actually needs)",
-      prep: [
-        "Get to Instagram's upload flow until 'Select from computer' is on screen.",
-        "Hover directly over that button — don't click it.",
-        "Once you're sitting on it, hit Ready below and press F9 while still hovering.",
-      ],
-    },
-  ],
-
-  // Backup only — DOM handles all of these now. Only worth touching if
-  // Instagram changes its layout and DOM automation breaks.
-  instagram_advanced: [
-    { action: "create", label: "Create button", prep: [
-      "Go to instagram.com.", "Hover over the '+' / Create icon in the sidebar — don't click it.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "post", label: "Post option (after Create)", prep: [
-      "Click Create for real so the menu opens.", "Hover over the 'Post' option.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "crop_button", label: "Crop button", prep: [
-      "Get to the crop screen after picking a video.", "Hover over the crop-select icon.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "nine_sixteen", label: "9:16 crop option", prep: [
-      "From the crop menu, hover over the 9:16 option.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "next1", label: "First Next button", prep: [
-      "Get to the first Next after cropping.", "Hover over it.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "next2", label: "Second Next button", prep: [
-      "Click through to the filters/second Next screen.", "Hover over it.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "caption", label: "Caption box", prep: [
-      "Get to the caption/share screen.", "Hover over the caption box.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-    { action: "share", label: "Share button", prep: [
-      "Get to the final screen.", "Hover over Share — don't click it.",
-      "Hit Ready below, then press F9 while still hovering." ] },
-  ],
-
-  youtube: [
-    {
-      action: "create",
-      label: "Create button (usually not needed — image match handles this on most screens)",
-      prep: [
-        "Go to studio.youtube.com in Chrome.",
-        "Hover over the Create button, top-right of the page — don't click it.",
-        "Once you're sitting on it, hit Ready below and press F9 while still hovering.",
+        "Hit Ready below, then press F9 while still hovering.",
       ],
     },
   ],
 };
+
+// Chrome Web Store page for the SunsetUploader Companion extension (unlisted).
+// Paste the link from the developer dashboard:
+// https://chromewebstore.google.com/detail/<extension-id>
+const EXTENSION_STORE_URL = "https://chromewebstore.google.com/detail/kfbhijfogikjkomlpoglpebolopbllip";
 
 const Upload = () => {
   const [isElectron, setIsElectron] = useState(false);
@@ -109,7 +60,7 @@ const Upload = () => {
       setShowPopup(true);
     } else {
       window.location.href =
-        "https://cdn.sunsetuploader.com/SunsetUploader%20Setup%201.0.1.exe";
+        "https://cdn.sunsetuploader.com/SunsetUploader%20Setup%201.0.2.exe";
     }
   };
 
@@ -134,6 +85,30 @@ const Upload = () => {
         >
           Please download the Windows app to upload videos. You must be logged in.
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+          style={{ maxWidth: 520, margin: "0 auto 8px", textAlign: "left", color: "#fff", lineHeight: 1.6 }}
+        >
+          <strong>Setup takes three steps:</strong>
+          <ol style={{ margin: "8px 0 0 20px" }}>
+            <li>Download and install the Windows app.</li>
+            <li>
+              Add the free{" "}
+              {EXTENSION_STORE_URL ? (
+                <a href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#feb47b" }}>
+                  SunsetUploader Companion
+                </a>
+              ) : (
+                "SunsetUploader Companion"
+              )}{" "}
+              extension to Chrome. The app can't click Post for you without it.
+            </li>
+            <li>Log in to TikTok and Instagram in Chrome.</li>
+          </ol>
+        </motion.div>
 
         <motion.div
           className="cta-container"
@@ -179,7 +154,13 @@ const Upload = () => {
         slam your mouse into the <strong>top-left corner</strong> of the screen to instantly abort.
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", padding: "14px 16px" }}>
+      <div className="failsafe-banner">
+        <strong>First time?</strong> SunsetUploader needs its free Chrome extension. If an upload
+        says the extension wasn't detected, the app opens its Chrome Web Store page for you: click
+        "Add to Chrome", then upload again.
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "14px 16px" }}>
         <button
           onClick={() => setShowCalibration(true)}
           style={{
@@ -191,8 +172,11 @@ const Upload = () => {
           }}
         >
           <Settings2 size={20} />
-          Calibrate platforms
+          Tailor to your screen
         </button>
+        <span style={{ fontSize: 13, opacity: 0.75, color: "#fff" }}>
+          Tailored to fit your machine. You choose exactly where it clicks.
+        </span>
       </div>
 
       <div className="upload-main">

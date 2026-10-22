@@ -26,6 +26,7 @@ export default function CalibrationWizard({ platforms, onComplete }) {
   const [error, setError] = useState(null);
 
   const steps = platform ? platforms[platform] : [];
+  const platformKeys = Object.keys(platforms).filter((k) => platforms[k]?.length);
 
   const handleCaptured = useCallback((data) => {
     setCalibratedActions((prev) => new Set(prev).add(data.action));
@@ -66,6 +67,13 @@ export default function CalibrationWizard({ platforms, onComplete }) {
     window.electronAPI?.startCalibrationCapture?.(platform, activeStep.action);
   };
 
+  // Only one platform needs calibrating now, so skip the "which platform?"
+  // screen and go straight to its steps.
+  useEffect(() => {
+    if (platformKeys.length === 1) choosePlatform(platformKeys[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div style={styles.card}>
       <button style={styles.closeBtn} onClick={onComplete} aria-label="Close">
@@ -83,6 +91,7 @@ export default function CalibrationWizard({ platforms, onComplete }) {
           calibratedActions={calibratedActions}
           onChooseStep={chooseStep}
           onBack={() => setMode("platformPicker")}
+          canGoBack={platformKeys.length > 1}
         />
       )}
 
@@ -122,13 +131,18 @@ function PlatformPickerScreen({ platforms, onChoose }) {
   );
 }
 
-function StepPickerScreen({ platform, steps, calibratedActions, onChooseStep, onBack }) {
+function StepPickerScreen({ platform, steps, calibratedActions, onChooseStep, onBack, canGoBack }) {
   const doneCount = steps.filter((s) => calibratedActions.has(s.action)).length;
   return (
     <>
       <h2 style={styles.title}>{PLATFORM_LABELS[platform] || platform}</h2>
       <p style={styles.subtitle}>
-        {doneCount} of {steps.length} done. Click any step to (re)calibrate just that one.
+        Tailored to fit your machine. Point at a button once and SunsetUploader clicks exactly
+        that spot. You decide where, nothing is guessed for you.
+      </p>
+      <p style={styles.holdHint}>
+        Optional: only needed if the app ever misses a button on your screen.{" "}
+        {doneCount} of {steps.length} set up.
       </p>
       <div style={styles.stepList}>
         {steps.map((step) => {
@@ -144,9 +158,11 @@ function StepPickerScreen({ platform, steps, calibratedActions, onChooseStep, on
           );
         })}
       </div>
-      <button style={styles.secondaryBtn} onClick={onBack}>
-        Back to platforms
-      </button>
+      {canGoBack && (
+        <button style={styles.secondaryBtn} onClick={onBack}>
+          Back to platforms
+        </button>
+      )}
     </>
   );
 }
